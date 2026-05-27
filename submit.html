@@ -12,120 +12,109 @@
 <meta name="apple-mobile-web-app-title" content="TrakX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  :root { color-scheme: light; }
-  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
-  .tab-active { background:#1d4ed8; color:#fff; }
-  .field { @apply block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-blue-500; }
-  label { @apply block text-sm font-medium text-gray-700 mb-1; }
-</style>
+<link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.07</div>
+<body data-page="submit" data-version="V0.08">
+<script src="assets/nav.js" defer></script>
 
-<div class="max-w-md mx-auto px-4 py-6">
-  <header class="mb-4">
-    <h1 class="text-xl font-bold text-gray-900" id="project-name">TrakX</h1>
-    <p class="text-sm text-gray-500" id="project-sub">Submit your daily entry</p>
-  </header>
-
-  <!-- Tabs -->
-  <div class="grid grid-cols-3 gap-1 bg-white rounded-lg p-1 shadow-sm mb-4">
-    <button class="tab tab-active py-2.5 rounded-md text-sm font-medium" data-tab="hours">Hours</button>
-    <button class="tab py-2.5 rounded-md text-sm font-medium text-gray-600" data-tab="materials">Materials</button>
-    <button class="tab py-2.5 rounded-md text-sm font-medium text-gray-600" data-tab="accom">Accom &amp; Travel</button>
+<main class="container-narrow">
+  <div class="mb-4">
+    <h1 id="project-name">Submitting…</h1>
+    <div class="text-muted text-sm" id="project-sub">Loading project…</div>
   </div>
 
-  <form id="trakx-form" class="space-y-3 bg-white rounded-lg p-4 shadow-sm">
-    <!-- Common fields -->
-    <div>
-      <label for="person">Your name</label>
+  <div class="tabs">
+    <button class="tab active" data-tab="hours">Hours</button>
+    <button class="tab" data-tab="materials">Materials</button>
+    <button class="tab" data-tab="accom">Accom &amp; Travel</button>
+  </div>
+
+  <form id="trakx-form" class="card">
+    <div class="field-group">
+      <label class="label" for="person">Your name</label>
       <select id="person" class="field" required></select>
     </div>
-    <div>
-      <label for="date">Date</label>
-      <input id="date" type="date" class="field" required>
-    </div>
-    <div>
-      <label for="zone">Zone</label>
-      <select id="zone" class="field" required></select>
+    <div class="grid-2 mb-3">
+      <div>
+        <label class="label" for="date">Date</label>
+        <input id="date" type="date" class="field" required>
+      </div>
+      <div>
+        <label class="label" for="zone">Zone</label>
+        <select id="zone" class="field" required></select>
+      </div>
     </div>
 
-    <!-- Hours fields -->
+    <!-- Hours tab -->
     <div class="tab-fields" data-fields="hours">
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid-2 mb-3">
         <div>
-          <label for="start_time">Start time</label>
-          <input id="start_time" type="time" class="field" step="60">
+          <label class="label" for="start_time">Start time</label>
+          <input id="start_time" type="time" class="field">
         </div>
         <div>
-          <label for="finish_time">Finish time</label>
-          <input id="finish_time" type="time" class="field" step="60">
+          <label class="label" for="finish_time">Finish time</label>
+          <input id="finish_time" type="time" class="field">
         </div>
       </div>
-      <label class="flex items-center mt-3 text-sm text-gray-700">
-        <input id="finish_next_day" type="checkbox" class="mr-2 h-4 w-4">
-        Finish is on the next day
+      <label class="check mb-3">
+        <input id="finish_next_day" type="checkbox">
+        Finish is on the next day (crosses midnight)
       </label>
-      <div class="mt-3">
-        <label for="work_description">What you did</label>
+      <div class="field-group">
+        <label class="label" for="work_description">What you did</label>
         <textarea id="work_description" class="field" rows="3" placeholder="e.g. Top coat blower room floor, cladding sill and scale"></textarea>
       </div>
     </div>
 
-    <!-- Materials fields -->
-    <div class="tab-fields hidden" data-fields="materials">
-      <div>
-        <label for="materials_description">Materials</label>
-        <textarea id="materials_description" class="field" rows="2" placeholder="e.g. 2x 4L kit rustbond, 3x 10L Carboguard 636"></textarea>
+    <!-- Materials tab -->
+    <div class="tab-fields" data-fields="materials" hidden>
+      <div class="field-group">
+        <label class="label" for="materials_description">Materials</label>
+        <textarea id="materials_description" class="field" rows="2" placeholder="e.g. 2x 4L kit Rustbond, 3x 10L Carboguard 636"></textarea>
       </div>
-      <div class="grid grid-cols-2 gap-3 mt-3">
+      <div class="grid-2 mb-3">
         <div>
-          <label for="materials_cost">Cost ($)</label>
+          <label class="label" for="materials_cost">Cost ($)</label>
           <input id="materials_cost" type="number" step="0.01" class="field" inputmode="decimal">
         </div>
         <div>
-          <label for="po_number">PO # (optional)</label>
+          <label class="label" for="po_number">PO # <span class="text-muted text-xs">(optional)</span></label>
           <input id="po_number" type="text" class="field" placeholder="WD44…">
         </div>
       </div>
-      <div class="mt-3">
-        <label for="receipt">Photo of receipt (optional)</label>
+      <div class="field-group">
+        <label class="label" for="receipt">Photo of receipt <span class="text-muted text-xs">(optional)</span></label>
         <input id="receipt" type="file" accept="image/*" capture="environment" class="field">
+        <div class="field-help">Upload not yet wired — photo will save with the entry in a future update.</div>
       </div>
     </div>
 
-    <!-- Accom & Travel fields -->
-    <div class="tab-fields hidden" data-fields="accom">
-      <div>
-        <label for="accom_nights">Nights stayed</label>
+    <!-- Accom & Travel tab -->
+    <div class="tab-fields" data-fields="accom" hidden>
+      <div class="field-group">
+        <label class="label" for="accom_nights">Nights stayed</label>
         <input id="accom_nights" type="number" min="0" class="field" inputmode="numeric" value="0">
       </div>
-      <div class="mt-3">
-        <label for="travel_kms">Travel km (optional)</label>
+      <div class="field-group">
+        <label class="label" for="travel_kms">Travel km <span class="text-muted text-xs">(optional)</span></label>
         <input id="travel_kms" type="number" min="0" step="0.1" class="field" inputmode="decimal">
       </div>
-      <p class="mt-2 text-xs text-gray-500">Tip: if you didn't stay overnight but drove a long way, log km here. If neither — you don't need this tab.</p>
+      <div class="field-help">If you didn't stay overnight but drove a long way, log km here. Either field is fine on its own.</div>
     </div>
 
-    <!-- Comments (all tabs) -->
-    <div>
-      <label for="comments">Comments (optional)</label>
+    <!-- Comments common to all tabs -->
+    <div class="field-group">
+      <label class="label" for="comments">Comments <span class="text-muted text-xs">(optional)</span></label>
       <input id="comments" type="text" class="field" placeholder="Anything to flag">
     </div>
 
-    <button type="submit" id="submit-btn"
-      class="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold text-base mt-4 disabled:bg-gray-400">
-      Submit
-    </button>
-    <div id="submit-msg" class="text-center text-sm font-medium"></div>
+    <button type="submit" id="submit-btn" class="btn btn-blue btn-lg btn-block mt-3">Submit</button>
+    <div id="submit-msg" class="text-center text-sm mt-3"></div>
   </form>
 
-  <p class="text-center text-xs text-gray-400 mt-4">
-    TrakX • <a href="javascript:location.reload()" class="underline">Refresh</a>
-  </p>
-</div>
+  <p class="trakx-footer">TrakX • <a href="javascript:location.reload()">Refresh</a></p>
+</main>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -136,30 +125,22 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const slug = new URLSearchParams(location.search).get('p') || 'fonterra-m26';
 let currentTab = 'hours';
-let projectId = null;
+let projectId  = null;
 
-// ── Tab switching ───────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(b => {
-      b.classList.remove('tab-active');
-      b.classList.add('text-gray-600');
-    });
-    btn.classList.add('tab-active');
-    btn.classList.remove('text-gray-600');
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
     currentTab = btn.dataset.tab;
     document.querySelectorAll('.tab-fields').forEach(div => {
-      div.classList.toggle('hidden', div.dataset.fields !== currentTab);
+      div.hidden = div.dataset.fields !== currentTab;
     });
   });
 });
 
-// ── Load project + dropdowns ────────────────────────────────────────
 async function load() {
-  // Default date = today
   document.getElementById('date').valueAsDate = new Date();
 
-  // Project
   const { data: project, error: pErr } = await sb
     .from('trakx_projects')
     .select('id, display_name, customer_name')
@@ -167,40 +148,39 @@ async function load() {
     .single();
   if (pErr || !project) {
     document.getElementById('project-name').textContent = 'Project not found';
-    document.getElementById('project-sub').textContent = 'Check the link.';
+    document.getElementById('project-sub').textContent  = 'Check the link.';
     document.getElementById('submit-btn').disabled = true;
     return;
   }
   projectId = project.id;
   document.getElementById('project-name').textContent = project.display_name;
-  document.getElementById('project-sub').textContent = `Submit your daily entry for ${project.customer_name}`;
+  document.getElementById('project-sub').textContent  = `Daily entry for ${project.customer_name}`;
+  const ctx = document.querySelector('.trakx-context');
+  if (ctx) ctx.textContent = project.display_name;
 
-  // Zones
   const { data: zones } = await sb
     .from('trakx_zones')
     .select('id, name')
     .eq('project_id', project.id)
     .eq('status', 'active')
     .order('display_order');
-  const zoneSel = document.getElementById('zone');
-  zoneSel.innerHTML = `<option value="">— pick zone —</option>` +
+  document.getElementById('zone').innerHTML =
+    `<option value="">— pick zone —</option>` +
     (zones || []).map(z => `<option value="${z.id}">${z.name}</option>`).join('');
 
-  // People (joined via project_people)
   const { data: links } = await sb
     .from('trakx_project_people')
     .select('person_id, trakx_people(id, name, trakx_companies(name))')
     .eq('project_id', project.id);
   const people = (links || [])
     .map(l => l.trakx_people)
-    .filter(p => p)
+    .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
-  const personSel = document.getElementById('person');
-  personSel.innerHTML = `<option value="">— pick name —</option>` +
+  document.getElementById('person').innerHTML =
+    `<option value="">— pick name —</option>` +
     people.map(p => `<option value="${p.id}">${p.name} (${p.trakx_companies?.name || ''})</option>`).join('');
 }
 
-// ── Submit handler ──────────────────────────────────────────────────
 document.getElementById('trakx-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = document.getElementById('submit-msg');
@@ -208,27 +188,27 @@ document.getElementById('trakx-form').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Submitting…';
   msg.textContent = '';
+  msg.className = 'text-center text-sm mt-3';
 
   const payload = {
     project_id: projectId,
-    type: currentTab,
-    zone_id: document.getElementById('zone').value,
-    person_id: document.getElementById('person').value,
-    date: document.getElementById('date').value,
+    type:       currentTab,
+    zone_id:    document.getElementById('zone').value,
+    person_id:  document.getElementById('person').value,
+    date:       document.getElementById('date').value,
   };
   if (currentTab === 'hours') {
-    payload.start_time = document.getElementById('start_time').value;
-    payload.finish_time = document.getElementById('finish_time').value;
-    payload.finish_next_day = document.getElementById('finish_next_day').checked;
+    payload.start_time       = document.getElementById('start_time').value;
+    payload.finish_time      = document.getElementById('finish_time').value;
+    payload.finish_next_day  = document.getElementById('finish_next_day').checked;
     payload.work_description = document.getElementById('work_description').value;
   } else if (currentTab === 'materials') {
     payload.materials_description = document.getElementById('materials_description').value;
-    payload.materials_cost = parseFloat(document.getElementById('materials_cost').value || '0');
-    payload.po_number = document.getElementById('po_number').value;
-    // receipt file upload — TBD
+    payload.materials_cost        = parseFloat(document.getElementById('materials_cost').value || '0');
+    payload.po_number             = document.getElementById('po_number').value;
   } else if (currentTab === 'accom') {
     payload.accom_nights = parseInt(document.getElementById('accom_nights').value || '0', 10);
-    payload.travel_kms = parseFloat(document.getElementById('travel_kms').value || '0');
+    payload.travel_kms   = parseFloat(document.getElementById('travel_kms').value || '0');
   }
   payload.comments = document.getElementById('comments').value;
 
@@ -241,9 +221,8 @@ document.getElementById('trakx-form').addEventListener('submit', async (e) => {
     const body = await r.json();
     if (!r.ok || !body.ok) throw new Error(body.error || `HTTP ${r.status}`);
 
-    msg.className   = 'text-center text-sm font-medium text-green-700';
+    msg.className = 'text-center text-sm mt-3 text-green';
     msg.textContent = '✓ Submitted — thanks!';
-    // Reset the per-entry fields but keep name + zone + date for fast re-entry
     document.getElementById('start_time').value = '';
     document.getElementById('finish_time').value = '';
     document.getElementById('finish_next_day').checked = false;
@@ -255,8 +234,8 @@ document.getElementById('trakx-form').addEventListener('submit', async (e) => {
     document.getElementById('travel_kms').value = '';
     document.getElementById('comments').value = '';
   } catch (e) {
-    msg.className   = 'text-center text-sm font-medium text-red-700';
-    msg.textContent = `⚠ ${e.message}`;
+    msg.className = 'text-center text-sm mt-3 text-red';
+    msg.textContent = '⚠ ' + e.message;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Submit';

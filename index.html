@@ -12,53 +12,60 @@
 <meta name="apple-mobile-web-app-title" content="TrakX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.07</div>
+<body data-page="dashboard" data-version="V0.08">
+<script src="assets/nav.js" defer></script>
 
-<div class="max-w-6xl mx-auto px-4 py-8">
-  <header class="mb-6">
-    <div class="text-sm text-gray-500">Fonterra</div>
-    <h1 class="text-3xl font-bold text-gray-900">Maungaturoto 26 — Operations Dashboard</h1>
-  </header>
-
-  <!-- KPI tiles -->
-  <div id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-    <div class="bg-white p-4 rounded-lg shadow-sm animate-pulse h-24 col-span-full text-gray-400 text-sm italic">Loading…</div>
+<main class="container">
+  <div class="mb-6 flex items-baseline justify-between gap-3">
+    <div>
+      <div class="text-muted text-xs uppercase font-semibold">Fonterra</div>
+      <h1>Maungaturoto 26 — Operations Dashboard</h1>
+    </div>
+    <a href="submit.html?p=fonterra-m26" class="btn btn-blue hide-mobile">+ New entry</a>
   </div>
 
-  <!-- Zone progress -->
-  <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
-    <h2 class="text-lg font-semibold mb-4">Zones vs PO target</h2>
-    <div id="zones" class="space-y-3"></div>
+  <div class="kpi-grid" id="kpis">
+    <div class="kpi"><div class="loading">Loading…</div></div>
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <span>Zones vs PO target</span>
+      <span class="sub" id="zones-sub"></span>
+    </div>
+    <div id="zones" class="flex" style="flex-direction:column;gap:18px"></div>
   </section>
 
-  <!-- Quick links -->
-  <section class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-    <a href="submit.html?p=fonterra-m26" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
-      <div class="text-xs text-gray-500">Public form</div>
-      <div class="font-semibold text-gray-900">Submit hours / materials / accom</div>
+  <section class="grid-4 mb-4">
+    <a href="submit.html?p=fonterra-m26" class="tile">
+      <div class="tile-eyebrow">Public form</div>
+      <div class="tile-title">Submit hours / materials</div>
+      <div class="tile-sub">Subbie smartform</div>
     </a>
-    <a href="approve.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
-      <div class="text-xs text-gray-500">PM</div>
-      <div class="font-semibold text-gray-900">Approve pending entries</div>
-      <div id="pending-pill" class="inline-block mt-2 text-xs bg-amber-100 text-amber-800 rounded-full px-2 py-0.5 hidden"></div>
+    <a href="approve.html" class="tile">
+      <div class="tile-eyebrow">PM</div>
+      <div class="tile-title">Approve pending entries</div>
+      <div class="tile-sub" id="pending-sub">—</div>
+      <span class="tile-pill badge badge-amber" id="pending-pill" hidden></span>
     </a>
-    <a href="ap.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
-      <div class="text-xs text-gray-500">Office</div>
-      <div class="font-semibold text-gray-900">Accounts Payable</div>
+    <a href="ap.html" class="tile">
+      <div class="tile-eyebrow">Office</div>
+      <div class="tile-title">Accounts Payable</div>
+      <div class="tile-sub" id="ap-sub">What we owe</div>
     </a>
-    <a href="ar.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
-      <div class="text-xs text-gray-500">Office</div>
-      <div class="font-semibold text-gray-900">Accounts Receivable</div>
+    <a href="ar.html" class="tile">
+      <div class="tile-eyebrow">Office</div>
+      <div class="tile-title">Accounts Receivable</div>
+      <div class="tile-sub" id="ar-sub">To invoice customer</div>
     </a>
   </section>
 
-  <p class="text-xs text-gray-400">
-    UI is rough — function first, polish later. See <a href="https://github.com/JMWAITE1/trakx-app/blob/main/TODO.md" class="underline">TODO.md</a>.
+  <p class="trakx-footer">
+    See <a href="https://github.com/JMWAITE1/trakx-app/blob/main/TODO.md" target="_blank">TODO.md</a> for what's next.
   </p>
-</div>
+</main>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -69,7 +76,6 @@ const sb = createClient(
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 const pct = n => (n == null ? '—' : (+n).toFixed(0) + '%');
 
-// Zone rollup
 const { data: zones } = await sb
   .from('v_trakx_zone_rollup')
   .select('*')
@@ -84,60 +90,71 @@ for (const z of (zones || [])) {
   totalHours   += +z.total_hours;
 }
 const totalGpPct = totalRevenue > 0 ? (100 * totalGp / totalRevenue) : 0;
+const overallPctTarget = totalTarget > 0 ? (100 * totalRevenue / totalTarget) : 0;
 
-// KPI tiles
 document.getElementById('kpis').innerHTML = [
-  ['Turnover',      fmt(totalRevenue), 'blue'],
-  ['Total Cost',    fmt(totalCost),    'gray'],
-  ['Total GP$',     fmt(totalGp),      'green'],
-  ['GP %',          pct(totalGpPct),   'green'],
-  ['Hours',         (+totalHours).toFixed(0), 'gray'],
-].map(([label, val, c]) => `
-  <div class="bg-white p-4 rounded-lg shadow-sm">
-    <div class="text-xs text-${c}-700 font-medium">${label}</div>
-    <div class="text-2xl font-bold mt-1">${val}</div>
+  { label:'Turnover',     value: fmt(totalRevenue),         sub: `of ${fmt(totalTarget)} (${pct(overallPctTarget)})`, accent:'blue'  },
+  { label:'Total Cost',   value: fmt(totalCost),            sub: '', accent:'gray'  },
+  { label:'Total GP $',   value: fmt(totalGp),              sub: '', accent:'gold'  },
+  { label:'GP %',         value: pct(totalGpPct),           sub: '', accent:'green' },
+  { label:'Hours logged', value: (+totalHours).toFixed(0),  sub: '', accent:'gray'  },
+].map(k => `
+  <div class="kpi accent-${k.accent}">
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value">${k.value}</div>
+    ${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}
   </div>
 `).join('');
 
-// Zone bars
+document.getElementById('zones-sub').textContent =
+  `${zones?.length || 0} zones • ${fmt(totalRevenue)} of ${fmt(totalTarget)}`;
+
 document.getElementById('zones').innerHTML = (zones || []).map(z => {
   const p = Math.min(100, +z.pct_complete || 0);
   const over = (+z.pct_complete || 0) > 100;
   const remaining = z.revenue_target_cents - z.revenue_actual_cents;
-  const alertSoon = !over && remaining < 200000 && z.revenue_target_cents > 0; // <$2k
+  const alertSoon = !over && remaining < 200000 && z.revenue_target_cents > 0;
+  const cls = over ? 'red' : alertSoon ? 'amber' : '';
+  const tag = over
+    ? `<span class="badge badge-red">OVER by ${fmt(-remaining)}</span>`
+    : alertSoon
+      ? `<span class="badge badge-amber">${fmt(remaining)} left</span>`
+      : '';
   return `
-    <div>
-      <div class="flex justify-between text-sm mb-1">
-        <span class="font-medium">${z.zone_name}</span>
-        <span class="text-gray-600">
-          ${fmt(z.revenue_actual_cents)} of ${fmt(z.revenue_target_cents)}
-          <span class="ml-2 text-xs ${over ? 'text-red-700 font-semibold' : alertSoon ? 'text-amber-700 font-semibold' : 'text-gray-500'}">
-            ${pct(z.pct_complete)}${over ? ' OVER' : alertSoon ? ` (${fmt(remaining)} left)` : ''}
-          </span>
-        </span>
+    <div class="progress">
+      <div class="progress-meta">
+        <span class="progress-name">${z.zone_name} ${tag}</span>
+        <span class="progress-vals">${fmt(z.revenue_actual_cents)} of ${fmt(z.revenue_target_cents)} <strong>${pct(z.pct_complete)}</strong></span>
       </div>
-      <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-        <div class="h-full ${over ? 'bg-red-500' : alertSoon ? 'bg-amber-500' : 'bg-blue-600'}"
-             style="width:${p}%"></div>
-      </div>
-      <div class="flex justify-between text-xs text-gray-500 mt-1">
-        <span>${(+z.total_hours).toFixed(0)}h logged</span>
+      <div class="progress-track"><div class="progress-bar ${cls}" style="width:${p}%"></div></div>
+      <div class="progress-foot">
+        <span>${(+z.total_hours).toFixed(0)} hours logged</span>
         <span>GP ${fmt(z.gp_cents)} (${pct(z.gp_pct)})</span>
       </div>
     </div>
   `;
-}).join('') || '<div class="italic text-gray-500">No zones found.</div>';
+}).join('') || '<div class="empty"><div class="icon">📋</div>No zones found.</div>';
 
-// Pending pill
 const { count } = await sb
   .from('trakx_entries')
   .select('id', { count: 'exact', head: true })
   .eq('approved', false);
 if (count && count > 0) {
   const pill = document.getElementById('pending-pill');
-  pill.textContent = `${count} pending`;
-  pill.classList.remove('hidden');
+  pill.textContent = count;
+  pill.hidden = false;
+  document.getElementById('pending-sub').textContent = `${count} waiting for PM`;
+} else {
+  document.getElementById('pending-sub').textContent = 'All caught up';
 }
+
+const { data: ap } = await sb.from('v_trakx_ap').select('total_cost_cents');
+const apSum = (ap || []).reduce((a, r) => a + r.total_cost_cents, 0);
+document.getElementById('ap-sub').textContent = `${fmt(apSum)} • ${(ap || []).length} lines`;
+
+const { data: ar } = await sb.from('v_trakx_ar').select('sell_price_cents');
+const arSum = (ar || []).reduce((a, r) => a + r.sell_price_cents, 0);
+document.getElementById('ar-sub').textContent = `${fmt(arSum)} • ${(ar || []).length} lines`;
 </script>
 </body>
 </html>

@@ -12,22 +12,21 @@
 <meta name="apple-mobile-web-app-title" content="TrakX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.07</div>
+<body data-page="ar" data-version="V0.08">
+<script src="assets/nav.js" defer></script>
 
-<div class="max-w-6xl mx-auto px-4 py-6">
-  <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
-  <div class="flex items-baseline justify-between mt-2 mb-4">
-    <h1 class="text-2xl font-bold">Accounts Receivable</h1>
-    <button id="export-csv" class="text-sm text-blue-700 hover:underline">Export CSV</button>
+<main class="container">
+  <div class="flex items-baseline justify-between mb-2 gap-3">
+    <h1>Accounts Receivable</h1>
+    <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
   </div>
-  <p class="text-gray-500 mb-4">What to invoice the customer. Approved entries only.</p>
+  <p class="text-muted text-sm mb-4">What to invoice the customer. Approved entries only.</p>
 
-  <div id="content" class="space-y-4 text-sm"></div>
-  <div id="grand" class="mt-6 p-4 bg-blue-50 rounded-lg font-semibold text-lg flex justify-between"></div>
-</div>
+  <div id="content"></div>
+  <div id="grand" class="card flex items-baseline justify-between mt-4" style="background:#f0f5fa;border-left:4px solid var(--gold)"></div>
+</main>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -41,8 +40,8 @@ const { data, error } = await sb.from('v_trakx_ar').select('*').order('date');
 const $  = document.getElementById('content');
 const $g = document.getElementById('grand');
 
-if (error) { $.textContent = 'Error: ' + error.message; }
-else if (!data?.length) { $.innerHTML = '<div class="italic text-gray-500">No approved entries yet.</div>'; }
+if (error) { $.innerHTML = '<div class="empty">Error: ' + error.message + '</div>'; }
+else if (!data?.length) { $.innerHTML = '<div class="empty"><div class="icon">📭</div>No approved entries yet.</div>'; }
 else {
   const groups = {};
   for (const r of data) (groups[r.zone_name] ||= []).push(r);
@@ -51,56 +50,53 @@ else {
     const total = rows.reduce((a, r) => a + r.sell_price_cents, 0);
     grandTotal += total;
     return `
-      <details class="bg-white rounded-lg shadow-sm" open>
-        <summary class="px-4 py-3 cursor-pointer font-semibold flex justify-between">
-          <span>${zone} <span class="text-gray-500 font-normal text-xs">(${rows.length} lines)</span></span>
-          <span>${fmt(total)}</span>
+      <details class="card" style="padding:0;overflow:hidden" open>
+        <summary style="padding:12px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:baseline; font-weight:600; background:var(--gray-50); border-bottom:1px solid var(--border)">
+          <span>${zone} <span class="text-muted text-xs" style="font-weight:400;margin-left:6px">${rows.length} lines</span></span>
+          <span style="font-variant-numeric:tabular-nums">${fmt(total)}</span>
         </summary>
-        <table class="w-full text-xs">
-          <thead class="bg-gray-50 text-gray-600 text-left">
-            <tr>
-              <th class="px-3 py-1.5">Date</th>
-              <th class="px-3 py-1.5">Name</th>
-              <th class="px-3 py-1.5">Company</th>
-              <th class="px-3 py-1.5">Type</th>
-              <th class="px-3 py-1.5 text-right">Labour</th>
-              <th class="px-3 py-1.5 text-right">Travel</th>
-              <th class="px-3 py-1.5 text-right">Accom</th>
-              <th class="px-3 py-1.5 text-right">Mats</th>
-              <th class="px-3 py-1.5 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => `
-              <tr class="border-t">
-                <td class="px-3 py-1.5">${r.date}</td>
-                <td class="px-3 py-1.5">${r.person_name}</td>
-                <td class="px-3 py-1.5 text-gray-600">${r.company_name}</td>
-                <td class="px-3 py-1.5 text-gray-600">${r.type}</td>
-                <td class="px-3 py-1.5 text-right">${fmt(r.labour_sell_cents)}</td>
-                <td class="px-3 py-1.5 text-right">${fmt(r.travel_sell_cents)}</td>
-                <td class="px-3 py-1.5 text-right">${fmt(r.accom_sell_cents)}</td>
-                <td class="px-3 py-1.5 text-right">${fmt(r.materials_sell_cents)}</td>
-                <td class="px-3 py-1.5 text-right font-medium">${fmt(r.sell_price_cents)}</td>
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Name</th><th>Company</th><th>Type</th>
+                <th class="num">Labour</th><th class="num">Travel</th>
+                <th class="num">Accom</th><th class="num">Materials</th>
+                <th class="num">Total</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr>
+                  <td>${r.date}</td>
+                  <td><div class="font-semibold">${r.person_name}</div>${(r.work_description || r.materials_description) ? `<div class="text-xs text-muted">${(r.work_description || r.materials_description).replace(/"/g,'&quot;').slice(0,60)}</div>` : ''}</td>
+                  <td class="text-muted">${r.company_name}</td>
+                  <td><span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span></td>
+                  <td class="num">${fmt(r.labour_sell_cents)}</td>
+                  <td class="num">${fmt(r.travel_sell_cents)}</td>
+                  <td class="num">${fmt(r.accom_sell_cents)}</td>
+                  <td class="num">${fmt(r.materials_sell_cents)}</td>
+                  <td class="num font-semibold">${fmt(r.sell_price_cents)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </details>
     `;
   }).join('');
-  $g.innerHTML = `<span>Total to invoice</span><span>${fmt(grandTotal)}</span>`;
+  $g.innerHTML = `<span class="font-semibold text-lg">Total to invoice</span><span class="text-lg font-bold" style="font-variant-numeric:tabular-nums">${fmt(grandTotal)}</span>`;
 }
 
 document.getElementById('export-csv').addEventListener('click', () => {
   if (!data?.length) return;
-  const cols = ['date','zone_name','person_name','company_name','type',
+  const cols = ['date','zone_name','person_name','company_name','type','work_description','materials_description',
                 'labour_sell_cents','travel_sell_cents','accom_sell_cents',
                 'materials_sell_cents','equipment_sell_cents','sell_price_cents'];
   const csv = [cols.join(',')].concat(
     data.map(r => cols.map(c => {
       let v = r[c]; if (v === null || v === undefined) v = '';
-      if (typeof v === 'string' && v.includes(',')) v = `"${v}"`;
+      if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = `"${v.replace(/"/g,'""')}"`;
       return v;
     }).join(','))
   ).join('\n');

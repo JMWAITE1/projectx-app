@@ -12,24 +12,24 @@
 <meta name="apple-mobile-web-app-title" content="TrakX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.07</div>
+<body data-page="approve" data-version="V0.08">
+<script src="assets/nav.js" defer></script>
 
-<div class="max-w-5xl mx-auto px-4 py-6">
-  <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
-  <h1 class="text-2xl font-bold mt-2">Pending approvals</h1>
-  <p class="text-gray-500 mb-4">Auth handled by Richard. PM ticks rows below.</p>
+<main class="container">
+  <h1 class="mb-2">Pending approvals</h1>
+  <p class="text-muted text-sm mb-4">PM ticks rows below. Auth handled by Richard.</p>
 
-  <div class="mb-4 flex items-center gap-3">
-    <label class="text-sm text-gray-600">PM name:</label>
-    <input id="pm-name" class="border rounded px-2 py-1 text-sm" value="" placeholder="who approved">
-    <span id="count" class="text-sm text-gray-500 ml-auto"></span>
+  <div class="card card-tight mb-4 flex items-center gap-3" style="flex-wrap:wrap">
+    <label class="label" for="pm-name" style="margin-bottom:0">PM name</label>
+    <input id="pm-name" class="field field-sm" style="max-width:240px" placeholder="who's approving">
+    <button id="approve-all" class="btn btn-success btn-sm" style="margin-left:auto">Approve all</button>
+    <span id="count" class="text-muted text-sm"></span>
   </div>
 
-  <div id="list" class="space-y-2 text-sm"></div>
-</div>
+  <div id="list" class="flex" style="flex-direction:column;gap:14px"></div>
+</main>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -40,31 +40,33 @@ const $list  = document.getElementById('list');
 const $count = document.getElementById('count');
 const $pm    = document.getElementById('pm-name');
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
+let allRows = [];
 
 async function load() {
-  $list.innerHTML = '<div class="text-gray-400 italic">Loading…</div>';
+  $list.innerHTML = '<div class="loading">Loading…</div>';
   const { data, error } = await sb
     .from('v_trakx_line_totals')
     .select('id, type, date, person_name, company_name, zone_name, start_time, finish_time, total_hours, work_description, comments, materials_description, po_number, total_cost_cents, sell_price_cents')
     .eq('approved', false)
     .order('date', { ascending: false });
-  if (error) { $list.textContent = 'Error: ' + error.message; return; }
-  if (!data?.length) {
-    $list.innerHTML = '<div class="text-gray-500 italic">All caught up — no pending entries.</div>';
+  if (error) { $list.innerHTML = '<div class="empty">Error: ' + error.message + '</div>'; return; }
+  allRows = data || [];
+  if (!allRows.length) {
+    $list.innerHTML = '<div class="empty"><div class="icon">✓</div>All caught up — no pending entries.</div>';
     $count.textContent = '0 pending';
     return;
   }
-  $count.textContent = `${data.length} pending`;
+  $count.textContent = `${allRows.length} pending`;
 
-  // Group by date
   const byDate = {};
-  for (const r of data) (byDate[r.date] ||= []).push(r);
+  for (const r of allRows) (byDate[r.date] ||= []).push(r);
 
   $list.innerHTML = Object.entries(byDate).map(([date, rows]) => `
-    <div class="bg-white rounded-lg shadow-sm">
-      <div class="px-3 py-2 bg-gray-100 text-xs font-medium text-gray-700 rounded-t-lg">${date}</div>
-      <table class="w-full">
-        <tbody>
+    <div class="card" style="padding:0">
+      <div style="padding:10px 14px; background:var(--gray-50); border-bottom:1px solid var(--border); border-radius:12px 12px 0 0; font-weight:600; font-size:13px;">
+        ${date} <span class="text-muted text-xs" style="font-weight:400; margin-left:6px">${rows.length} entries</span>
+      </div>
+      <div class="divide-y">
         ${rows.map(r => {
           const detail = r.type === 'hours'
             ? `${r.start_time?.slice(0,5)}–${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)`
@@ -72,57 +74,59 @@ async function load() {
               ? (r.po_number ? `PO ${r.po_number}` : '')
               : '';
           const desc = r.work_description || r.materials_description || '';
+          const typeBadge = `<span class="badge badge-${r.type === 'hours' ? 'blue' : r.type === 'materials' ? 'gold' : 'amber'}">${r.type}</span>`;
           return `
-          <tr class="border-t align-top" data-id="${r.id}">
-            <td class="px-3 py-2">
-              <div class="font-medium">${r.person_name}</div>
-              <div class="text-xs text-gray-500">${r.company_name} • ${r.zone_name} • ${r.type}${detail ? ' • ' + detail : ''}</div>
-              ${desc ? `<div class="text-xs text-gray-700 mt-1 italic">"${desc.replace(/"/g,'&quot;')}"</div>` : ''}
-              ${r.comments ? `<div class="text-xs text-amber-700 mt-1">⚠ ${r.comments.replace(/"/g,'&quot;')}</div>` : ''}
-            </td>
-            <td class="px-3 py-2 text-right whitespace-nowrap">
-              <div class="text-gray-600">cost ${fmt(r.total_cost_cents)}</div>
-              <div class="font-semibold">sell ${fmt(r.sell_price_cents)}</div>
-            </td>
-            <td class="px-3 py-2 text-right">
-              <button class="approve-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm"
-                data-id="${r.id}">Approve</button>
-            </td>
-          </tr>
-        `;}).join('')}
-        </tbody>
-      </table>
+          <div class="flex items-start gap-3" style="padding:12px 14px" data-id="${r.id}">
+            <div style="flex:1;min-width:0">
+              <div class="flex items-baseline gap-2" style="flex-wrap:wrap">
+                <span class="font-semibold">${r.person_name}</span>
+                ${typeBadge}
+                <span class="text-muted text-xs">${r.company_name} • ${r.zone_name}${detail ? ' • ' + detail : ''}</span>
+              </div>
+              ${desc ? `<div class="text-sm text-gray-700 mt-1">"${desc.replace(/"/g,'&quot;')}"</div>` : ''}
+              ${r.comments ? `<div class="text-xs text-amber mt-1">⚠ ${r.comments.replace(/"/g,'&quot;')}</div>` : ''}
+            </div>
+            <div class="text-right" style="min-width:90px">
+              <div class="text-xs text-muted">cost ${fmt(r.total_cost_cents)}</div>
+              <div class="font-semibold">${fmt(r.sell_price_cents)}</div>
+            </div>
+            <button class="btn btn-success btn-sm approve-btn" data-id="${r.id}">Approve</button>
+          </div>`;
+        }).join('')}
+      </div>
     </div>
   `).join('');
 
-  document.querySelectorAll('.approve-btn').forEach(btn => {
-    btn.addEventListener('click', () => approve(btn));
-  });
+  document.querySelectorAll('.approve-btn').forEach(btn =>
+    btn.addEventListener('click', () => approve([btn.dataset.id]))
+  );
 }
 
-async function approve(btn) {
-  const id = btn.dataset.id;
+async function approve(ids) {
   const pm = $pm.value.trim();
-  if (!pm) { $pm.focus(); $pm.classList.add('ring-2', 'ring-red-400'); return; }
-  $pm.classList.remove('ring-2', 'ring-red-400');
-  btn.disabled = true;
-  btn.textContent = '…';
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-approve`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entry_id: id, approved: true, approved_by: pm }),
-  });
-  const body = await r.json();
-  if (body.ok) {
-    const row = btn.closest('tr');
-    row.style.opacity = '0.3';
-    setTimeout(load, 300);
-  } else {
-    btn.disabled = false;
-    btn.textContent = 'Retry';
-    alert(body.error || 'failed');
+  if (!pm) {
+    $pm.focus();
+    $pm.style.borderColor = 'var(--red)';
+    setTimeout(() => { $pm.style.borderColor = ''; }, 1500);
+    return;
   }
+  for (const id of ids) {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry_id: id, approved: true, approved_by: pm }),
+    });
+    const body = await r.json();
+    if (!body.ok) { alert(body.error || 'failed on ' + id); break; }
+  }
+  await load();
 }
+
+document.getElementById('approve-all').addEventListener('click', () => {
+  if (!allRows.length) return;
+  if (!confirm(`Approve all ${allRows.length} pending entries?`)) return;
+  approve(allRows.map(r => r.id));
+});
 
 load();
 </script>
