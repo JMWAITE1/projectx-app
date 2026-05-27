@@ -32,7 +32,7 @@ body {
   background: var(--bg);
   color: var(--gray-900);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.45;            /* matches Project Tracker + qa-trial */
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
