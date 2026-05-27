@@ -20,25 +20,31 @@
      covers branding. */
   .dash-grid {
     display: grid;
-    grid-template-columns: 220px 1fr 1fr 220px;
-    gap: 16px;
-    align-items: start;
+    grid-template-columns: 190px 1fr 1fr 190px;
+    gap: 14px;
+    align-items: stretch;
     margin-bottom: 16px;
   }
-  @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 700px)  { .dash-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+  @media (max-width: 700px)  { .dash-grid { grid-template-columns: 1fr; align-items: start; } }
 
-  .kpi-strip { display: flex; flex-direction: column; gap: 10px; }
+  /* KPI cards distribute evenly down the column so the strip's overall
+     height matches the chart cards next to it. */
+  .kpi-strip { display: flex; flex-direction: column; gap: 8px; }
   .kpi-row {
     background: white;
     border-radius: var(--r);
-    padding: 10px 14px;
+    padding: 8px 12px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
-  .kpi-row .kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-  .kpi-row .kpi-value { font-size: 20px; font-weight: 600; color: var(--ink); margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-  .kpi-row .kpi-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .kpi-row .kpi-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi-row .kpi-value { font-size: 17px; font-weight: 600; color: var(--ink); margin-top: 2px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .kpi-row .kpi-sub   { font-size: 10px; color: var(--muted); margin-top: 1px; }
 
   .chart-card {
     background: white;
@@ -63,21 +69,27 @@
   }
   .chart-wrap { position: relative; flex: 1; min-height: 280px; }
 
-  .side-col { display: flex; flex-direction: column; gap: 14px; }
+  /* Side column matches the KPI strip: cards distribute evenly so the
+     column bottom-aligns with the charts. */
+  .side-col { display: flex; flex-direction: column; gap: 8px; }
   .side-card {
     background: white;
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 12px 14px;
+    border-radius: var(--r);
+    padding: 8px 12px;
     box-shadow: var(--shadow-sm);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
-  .side-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
-  .ns-row { font-size: 12px; color: var(--muted); padding: 4px 0; display: block; }
+  .side-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .ns-row { font-size: 11px; color: var(--muted); padding: 2px 0; display: block; }
   .ns-row strong { color: var(--navy); margin-right: 6px; font-variant-numeric: tabular-nums; }
 
-  .legend-list { display: flex; flex-direction: column; gap: 6px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray-700); }
-  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  .legend-list { display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--gray-700); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 
   .zone-table-card { background: white; border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
   .zone-table { width: 100%; border-collapse: collapse; }
@@ -90,7 +102,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.38">
+<body data-page="dashboard" data-version="V0.39">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -252,7 +264,7 @@ const tot = (lines || []).reduce((a, r) => ({
 }), { labour:0, travel:0, accom:0, materials:0 });
 
 document.getElementById('kpi-strip').innerHTML = [
-  { label:'Turnover',       value:fmt(totalRevenue), sub:`of ${fmt(totalTarget)}` },
+  { label:'Revenue',        value:fmt(totalRevenue), sub:`of ${fmt(totalTarget)}` },
   { label:'Total Labour',   value:fmt(tot.labour),   sub:'' },
   { label:'Travel / Accom', value:fmt(tot.travel + tot.accom), sub:'' },
   { label:'Total Material', value:fmt(tot.materials), sub:'' },
