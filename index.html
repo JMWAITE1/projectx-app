@@ -13,57 +13,216 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* Dashboard-specific layout mimicking the Smartsheet "Operations
+     Dashboard". Three-column grid: KPI strip on the left, two charts
+     in the middle/right, zone table below, quick-links column on the
+     far right. Collapses to single column on mobile. */
+  .dash-title {
+    background: linear-gradient(180deg, #1e3a5f 0%, #16304f 100%);
+    color: white;
+    padding: 18px 24px;
+    border-radius: var(--r-lg);
+    margin-bottom: 18px;
+    border-left: 4px solid var(--gold);
+  }
+  .dash-title .customer { font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .dash-title h1 { color: white; font-size: 22px; margin-top: 4px; }
+  .dash-title .sub { color: rgba(255,255,255,0.65); font-size: 13px; margin-top: 4px; }
+
+  .dash-banner {
+    background: var(--blue);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+    border-radius: var(--r);
+    margin-bottom: 14px;
+  }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 240px;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 1100px) {
+    .dash-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    .dash-grid { grid-template-columns: 1fr; }
+  }
+
+  .kpi-strip { display: flex; flex-direction: column; gap: 10px; }
+  .kpi-row {
+    background: white;
+    border-radius: var(--r);
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .kpi-row .kpi-label { font-size: 11px; color: var(--blue); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi-row .kpi-value { font-size: 22px; font-weight: 800; color: var(--navy); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi-row .kpi-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .chart-card {
+    background: white;
+    border-radius: var(--r-lg);
+    padding: 14px 16px 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .chart-title {
+    text-align: center;
+    background: var(--blue);
+    color: white;
+    padding: 6px;
+    border-radius: var(--r);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .chart-wrap { position: relative; flex: 1; min-height: 280px; }
+
+  .quick-col { display: flex; flex-direction: column; gap: 10px; }
+  .quick-link {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 10px 12px;
+    color: var(--navy);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s;
+  }
+  .quick-link:hover { background: var(--gray-50); text-decoration: none; }
+  .quick-link .icon { font-size: 18px; }
+  .ns-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 8px 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ns-card-title { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 5px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+  .ns-row { font-size: 11px; color: var(--muted); padding: 3px 0; display: block; }
+  .ns-row strong { color: var(--navy); }
+
+  .accounts-btn {
+    background: #c62828;
+    color: white;
+    border-radius: var(--r);
+    padding: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-sm);
+  }
+  .accounts-btn:hover { background: #b71c1c; text-decoration: none; }
+
+  .zone-table-card { background: white; border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .zone-table { width: 100%; border-collapse: collapse; }
+  .zone-table th { background: #fff8d6; padding: 6px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--navy); text-align: left; border-bottom: 1px solid var(--border); }
+  .zone-table th.num, .zone-table td.num { text-align: right; }
+  .zone-table td { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); background: #fff8d6; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .zone-table tr:last-child td { border-bottom: none; }
+  .zone-table td.zone-name { font-weight: 600; color: var(--navy); }
+  .zone-table .actual-cell { font-weight: 700; }
+  .zone-table .actual-cell.over { color: var(--red); }
+  .zone-table .actual-cell.under { color: var(--green); }
+</style>
 </head>
-<body data-page="dashboard" data-version="V0.09">
+<body data-page="dashboard" data-version="V0.10">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
-  <div class="mb-6 flex items-baseline justify-between gap-3">
-    <div>
-      <div class="text-muted text-xs uppercase font-semibold">Fonterra</div>
-      <h1>Maungaturoto 26 — Operations Dashboard</h1>
-    </div>
-    <a href="submit.html?p=fonterra-m26" class="btn btn-blue hide-mobile">+ New entry</a>
+  <div class="dash-title">
+    <div class="customer">Fonterra</div>
+    <h1>Maungaturoto 26</h1>
+    <div class="sub">Operations Dashboard</div>
   </div>
 
-  <div class="kpi-grid" id="kpis">
-    <div class="kpi"><div class="loading">Loading…</div></div>
+  <div class="dash-banner">Summary</div>
+
+  <!-- Main dashboard grid: KPI strip | GP$ by Plant | Total GP$ | Quick column -->
+  <div class="dash-grid">
+
+    <!-- Left: vertical KPI strip -->
+    <div class="kpi-strip" id="kpi-strip">
+      <div class="kpi-row"><div class="kpi-label">Loading…</div></div>
+    </div>
+
+    <!-- Middle: GP$ by Plant chart -->
+    <div class="chart-card">
+      <div class="chart-title">GP$ by Plant</div>
+      <div class="chart-wrap"><canvas id="chart-gp-by-plant"></canvas></div>
+    </div>
+
+    <!-- Middle-right: Total GP$ chart -->
+    <div class="chart-card">
+      <div class="chart-title">Total GP$</div>
+      <div class="chart-wrap"><canvas id="chart-total"></canvas></div>
+    </div>
+
+    <!-- Right: NetSuite + quick links + accounts -->
+    <div class="quick-col">
+      <div class="ns-card">
+        <div class="ns-card-title">NetSuite Projects</div>
+        <div id="ns-list"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Quick Links</div>
+      <a class="quick-link" href="submit.html?p=fonterra-m26"><span class="icon">⏱</span>Hours Tracking</a>
+      <a class="quick-link" href="submit.html?p=fonterra-m26"><span class="icon">🚗</span>KMs &amp; Travel</a>
+      <a class="quick-link" href="submit.html?p=fonterra-m26"><span class="icon">📦</span>Materials Used</a>
+
+      <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.05em;margin-top:8px;">Accounts Reports</div>
+      <a class="accounts-btn" href="ap.html">Accounts<br>Payable</a>
+      <a class="accounts-btn" href="ar.html">Accounts<br>Receivable</a>
+    </div>
   </div>
 
-  <section class="card">
-    <div class="card-header">
-      <span>Zones vs PO target</span>
-      <span class="sub" id="zones-sub"></span>
-    </div>
-    <div id="zones" class="flex" style="flex-direction:column;gap:18px"></div>
-  </section>
+  <!-- Zone summary table -->
+  <div class="zone-table-card">
+    <table class="zone-table">
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th class="num">Total Costs</th>
+          <th class="num">Total GP$</th>
+          <th class="num">Target</th>
+          <th class="num">Current</th>
+          <th class="num">%</th>
+        </tr>
+      </thead>
+      <tbody id="zone-tbody">
+        <tr><td colspan="6" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <section class="grid-4 mb-4">
-    <a href="submit.html?p=fonterra-m26" class="tile">
-      <div class="tile-eyebrow">Public form</div>
-      <div class="tile-title">Submit hours / materials</div>
-      <div class="tile-sub">Subbie smartform</div>
-    </a>
-    <a href="approve.html" class="tile">
-      <div class="tile-eyebrow">PM</div>
-      <div class="tile-title">Approve pending entries</div>
-      <div class="tile-sub" id="pending-sub">—</div>
-      <span class="tile-pill badge badge-amber" id="pending-pill" hidden></span>
-    </a>
-    <a href="ap.html" class="tile">
-      <div class="tile-eyebrow">Office</div>
-      <div class="tile-title">Accounts Payable</div>
-      <div class="tile-sub" id="ap-sub">What we owe</div>
-    </a>
-    <a href="ar.html" class="tile">
-      <div class="tile-eyebrow">Office</div>
-      <div class="tile-title">Accounts Receivable</div>
-      <div class="tile-sub" id="ar-sub">To invoice customer</div>
-    </a>
-  </section>
+  <!-- PM approval prompt if pending -->
+  <div id="pending-banner" hidden style="margin-top:16px"></div>
 
   <p class="trakx-footer">
-    See <a href="https://github.com/JMWAITE1/trakx-app/blob/main/TODO.md" target="_blank">TODO.md</a> for what's next.
+    UI is iterative — feedback welcome. See <a href="https://github.com/JMWAITE1/trakx-app/blob/main/TODO.md" target="_blank">TODO.md</a>.
   </p>
 </main>
 
@@ -75,6 +234,13 @@ const sb = createClient(
 );
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 const pct = n => (n == null ? '—' : (+n).toFixed(0) + '%');
+
+// Brand colours for chart series — matches Smartsheet original
+const C_HOURS  = '#3b82f6';     // blue — total hours
+const C_COSTS  = '#1e40af';     // dark blue — total costs
+const C_GP     = '#fbbf24';     // amber — GP$
+const C_TARGET = '#10b981';     // green — revenue target
+const C_ACTUAL = '#ef4444';     // red — revenue actual
 
 const { data: zones } = await sb
   .from('v_trakx_zone_rollup')
@@ -90,71 +256,126 @@ for (const z of (zones || [])) {
   totalHours   += +z.total_hours;
 }
 const totalGpPct = totalRevenue > 0 ? (100 * totalGp / totalRevenue) : 0;
-const overallPctTarget = totalTarget > 0 ? (100 * totalRevenue / totalTarget) : 0;
 
-document.getElementById('kpis').innerHTML = [
-  { label:'Turnover',     value: fmt(totalRevenue),         sub: `of ${fmt(totalTarget)} (${pct(overallPctTarget)})`, accent:'blue'  },
-  { label:'Total Cost',   value: fmt(totalCost),            sub: '', accent:'gray'  },
-  { label:'Total GP $',   value: fmt(totalGp),              sub: '', accent:'gold'  },
-  { label:'GP %',         value: pct(totalGpPct),           sub: '', accent:'green' },
-  { label:'Hours logged', value: (+totalHours).toFixed(0),  sub: '', accent:'gray'  },
+// Side strip mirrors Smartsheet: Turnover / Total Labour / Travel/Accom / Total Material / Total GP$ / Total GP%
+// Pull breakdown from line totals to get labour/travel/accom/materials separately
+const { data: lines } = await sb.from('v_trakx_line_totals').select('labour_cost_cents, travel_cost_cents, accom_cost_cents, materials_cost_cents, equipment_cost_cents').eq('approved', true);
+const tot = (lines || []).reduce((a, r) => ({
+  labour:    a.labour    + r.labour_cost_cents,
+  travel:    a.travel    + r.travel_cost_cents,
+  accom:     a.accom     + r.accom_cost_cents,
+  materials: a.materials + r.materials_cost_cents,
+}), { labour:0, travel:0, accom:0, materials:0 });
+
+document.getElementById('kpi-strip').innerHTML = [
+  { label:'Turnover',       value:fmt(totalRevenue), sub:`of ${fmt(totalTarget)}` },
+  { label:'Total Labour',   value:fmt(tot.labour),   sub:'' },
+  { label:'Travel / Accom', value:fmt(tot.travel + tot.accom), sub:'' },
+  { label:'Total Material', value:fmt(tot.materials), sub:'' },
+  { label:'Total GP $',     value:fmt(totalGp),      sub:'' },
+  { label:'Total GP %',     value:pct(totalGpPct),   sub:'' },
 ].map(k => `
-  <div class="kpi accent-${k.accent}">
+  <div class="kpi-row">
     <div class="kpi-label">${k.label}</div>
     <div class="kpi-value">${k.value}</div>
     ${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}
   </div>
 `).join('');
 
-document.getElementById('zones-sub').textContent =
-  `${zones?.length || 0} zones • ${fmt(totalRevenue)} of ${fmt(totalTarget)}`;
+// NetSuite project list — same content as Smartsheet dashboard
+document.getElementById('ns-list').innerHTML = (zones || []).map(z => {
+  if (!z.netsuite_project_id) return '';
+  return `<span class="ns-row"><strong>${z.netsuite_project_id}</strong> ${z.zone_name}</span>`;
+}).join('');
 
-document.getElementById('zones').innerHTML = (zones || []).map(z => {
-  const p = Math.min(100, +z.pct_complete || 0);
-  const over = (+z.pct_complete || 0) > 100;
-  const remaining = z.revenue_target_cents - z.revenue_actual_cents;
-  const alertSoon = !over && remaining < 200000 && z.revenue_target_cents > 0;
-  const cls = over ? 'red' : alertSoon ? 'amber' : '';
-  const tag = over
-    ? `<span class="badge badge-red">OVER by ${fmt(-remaining)}</span>`
-    : alertSoon
-      ? `<span class="badge badge-amber">${fmt(remaining)} left</span>`
-      : '';
-  return `
-    <div class="progress">
-      <div class="progress-meta">
-        <span class="progress-name">${z.zone_name} ${tag}</span>
-        <span class="progress-vals">${fmt(z.revenue_actual_cents)} of ${fmt(z.revenue_target_cents)} <strong>${pct(z.pct_complete)}</strong></span>
-      </div>
-      <div class="progress-track"><div class="progress-bar ${cls}" style="width:${p}%"></div></div>
-      <div class="progress-foot">
-        <span>${(+z.total_hours).toFixed(0)} hours logged</span>
-        <span>GP ${fmt(z.gp_cents)} (${pct(z.gp_pct)})</span>
-      </div>
-    </div>
-  `;
-}).join('') || '<div class="empty"><div class="icon">📋</div>No zones found.</div>';
-
-const { count } = await sb
-  .from('trakx_entries')
-  .select('id', { count: 'exact', head: true })
-  .eq('approved', false);
-if (count && count > 0) {
-  const pill = document.getElementById('pending-pill');
-  pill.textContent = count;
-  pill.hidden = false;
-  document.getElementById('pending-sub').textContent = `${count} waiting for PM`;
+// Zone table at bottom
+const zoneTbody = document.getElementById('zone-tbody');
+if (!zones?.length) {
+  zoneTbody.innerHTML = '<tr><td colspan="6" class="text-muted italic" style="text-align:center;padding:20px">No zones.</td></tr>';
 } else {
-  document.getElementById('pending-sub').textContent = 'All caught up';
+  zoneTbody.innerHTML = zones.map(z => {
+    const over = z.revenue_actual_cents > z.revenue_target_cents;
+    return `
+      <tr>
+        <td class="zone-name">${z.zone_name}</td>
+        <td class="num">${fmt(z.total_cost_cents)}</td>
+        <td class="num">${fmt(z.gp_cents)}</td>
+        <td class="num">${fmt(z.revenue_target_cents)}</td>
+        <td class="num actual-cell ${over ? 'over' : 'under'}">${fmt(z.revenue_actual_cents)}</td>
+        <td class="num">${pct(z.pct_complete)}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
-const { data: ap } = await sb.from('v_trakx_ap').select('total_cost_cents');
-const apSum = (ap || []).reduce((a, r) => a + r.total_cost_cents, 0);
-document.getElementById('ap-sub').textContent = `${fmt(apSum)} • ${(ap || []).length} lines`;
+// ── GP$ by Plant chart — multi-series grouped bars per zone ─────
+const zoneLabels = (zones || []).map(z => z.zone_name);
+const ctx1 = document.getElementById('chart-gp-by-plant').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: zoneLabels,
+    datasets: [
+      { label: 'Total Hours',    data: zones.map(z => +z.total_hours),                  backgroundColor: C_HOURS },
+      { label: 'Total Costs',    data: zones.map(z => z.total_cost_cents / 100),         backgroundColor: C_COSTS },
+      { label: 'Total GP$',      data: zones.map(z => z.gp_cents / 100),                 backgroundColor: C_GP },
+      { label: 'Revenue Target', data: zones.map(z => z.revenue_target_cents / 100),     backgroundColor: C_TARGET },
+      { label: 'Revenue Actual', data: zones.map(z => z.revenue_actual_cents / 100),     backgroundColor: C_ACTUAL },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.dataset.label === 'Total Hours' ? c.parsed.y.toFixed(0) + ' h' : '$' + c.parsed.y.toLocaleString()}` } },
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'k' : '$' + v } },
+      x: { ticks: { font: { size: 10 } } },
+    },
+  },
+});
 
-const { data: ar } = await sb.from('v_trakx_ar').select('sell_price_cents');
-const arSum = (ar || []).reduce((a, r) => a + r.sell_price_cents, 0);
-document.getElementById('ar-sub').textContent = `${fmt(arSum)} • ${(ar || []).length} lines`;
+// ── Total GP$ chart — single grouped bar of project-wide totals ─
+const ctx2 = document.getElementById('chart-total').getContext('2d');
+new Chart(ctx2, {
+  type: 'bar',
+  data: {
+    labels: ['Project Total'],
+    datasets: [
+      { label: 'Total Costs',    data: [totalCost     / 100], backgroundColor: C_COSTS },
+      { label: 'Total GP$',      data: [totalGp       / 100], backgroundColor: C_GP },
+      { label: 'Revenue Target', data: [totalTarget   / 100], backgroundColor: C_TARGET },
+      { label: 'Revenue Actual', data: [totalRevenue  / 100], backgroundColor: C_ACTUAL },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: $${c.parsed.y.toLocaleString()}` } },
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'k' : '$' + v } },
+      x: { ticks: { font: { size: 11 } } },
+    },
+  },
+});
+
+// Pending banner
+const { count } = await sb.from('trakx_entries').select('id', { count: 'exact', head: true }).eq('approved', false);
+if (count && count > 0) {
+  const b = document.getElementById('pending-banner');
+  b.innerHTML = `
+    <a href="approve.html" class="card flex items-center gap-3" style="background:var(--amber-bg);border-left:4px solid var(--amber);text-decoration:none">
+      <span style="font-size:22px">⚠</span>
+      <div>
+        <div class="font-semibold" style="color:var(--amber)">${count} pending approval${count > 1 ? 's' : ''}</div>
+        <div class="text-xs text-muted">Click to review</div>
+      </div>
+    </a>`;
+  b.hidden = false;
+}
 </script>
 </body>
 </html>
