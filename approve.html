@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrakX — Approve</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.04</div>
+
+<div class="max-w-5xl mx-auto px-4 py-6">
+  <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
+  <h1 class="text-2xl font-bold mt-2">Pending approvals</h1>
+  <p class="text-gray-500 mb-4">Auth handled by Richard. PM ticks rows below.</p>
+
+  <div class="mb-4 flex items-center gap-3">
+    <label class="text-sm text-gray-600">PM name:</label>
+    <input id="pm-name" class="border rounded px-2 py-1 text-sm" value="" placeholder="who approved">
+    <span id="count" class="text-sm text-gray-500 ml-auto"></span>
+  </div>
+
+  <div id="list" class="space-y-2 text-sm"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
+const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
+
+const $list  = document.getElementById('list');
+const $count = document.getElementById('count');
+const $pm    = document.getElementById('pm-name');
+const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
+
+async function load() {
+  $list.innerHTML = '<div class="text-gray-400 italic">Loading…</div>';
+  const { data, error } = await sb
+    .from('v_trakx_line_totals')
+    .select('*')
+    .eq('approved', false)
+    .order('date', { ascending: false });
+  if (error) { $list.textContent = 'Error: ' + error.message; return; }
+  if (!data?.length) {
+    $list.innerHTML = '<div class="text-gray-500 italic">All caught up — no pending entries.</div>';
+    $count.textContent = '0 pending';
+    return;
+  }
+  $count.textContent = `${data.length} pending`;
+
+  // Group by date
+  const byDate = {};
+  for (const r of data) (byDate[r.date] ||= []).push(r);
+
+  $list.innerHTML = Object.entries(byDate).map(([date, rows]) => `
+    <div class="bg-white rounded-lg shadow-sm">
+      <div class="px-3 py-2 bg-gray-100 text-xs font-medium text-gray-700 rounded-t-lg">${date}</div>
+      <table class="w-full">
+        <tbody>
+        ${rows.map(r => `
+          <tr class="border-t" data-id="${r.id}">
+            <td class="px-3 py-2">
+              <div class="font-medium">${r.person_name}</div>
+              <div class="text-xs text-gray-500">${r.company_name} • ${r.zone_name} • ${r.type}</div>
+              ${r.type === 'hours'
+                ? `<div class="text-xs text-gray-600">${r.start_time?.slice(0,5)}–${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)</div>`
+                : ''}
+            </td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">
+              <div class="text-gray-600">cost ${fmt(r.total_cost_cents)}</div>
+              <div class="font-semibold">sell ${fmt(r.sell_price_cents)}</div>
+            </td>
+            <td class="px-3 py-2 text-right">
+              <button class="approve-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm"
+                data-id="${r.id}">Approve</button>
+            </td>
+          </tr>
+        `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.approve-btn').forEach(btn => {
+    btn.addEventListener('click', () => approve(btn));
+  });
+}
+
+async function approve(btn) {
+  const id = btn.dataset.id;
+  const pm = $pm.value.trim();
+  if (!pm) { $pm.focus(); $pm.classList.add('ring-2', 'ring-red-400'); return; }
+  $pm.classList.remove('ring-2', 'ring-red-400');
+  btn.disabled = true;
+  btn.textContent = '…';
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entry_id: id, approved: true, approved_by: pm }),
+  });
+  const body = await r.json();
+  if (body.ok) {
+    const row = btn.closest('tr');
+    row.style.opacity = '0.3';
+    setTimeout(load, 300);
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+    alert(body.error || 'failed');
+  }
+}
+
+load();
+</script>
+</body>
+</html>

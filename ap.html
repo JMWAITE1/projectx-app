@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrakX — Accounts Payable</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.04</div>
+
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
+  <div class="flex items-baseline justify-between mt-2 mb-4">
+    <h1 class="text-2xl font-bold">Accounts Payable</h1>
+    <button id="export-csv" class="text-sm text-blue-700 hover:underline">Export CSV</button>
+  </div>
+  <p class="text-gray-500 mb-4">What we owe contractors. Excludes internal staff.</p>
+
+  <div id="content" class="space-y-4 text-sm"></div>
+  <div id="grand" class="mt-6 p-4 bg-blue-50 rounded-lg font-semibold text-lg flex justify-between"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(
+  'https://uhodycdbkwocvptiffks.supabase.co',
+  'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
+);
+const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
+
+const { data, error } = await sb.from('v_trakx_ap').select('*').order('date');
+const $ = document.getElementById('content');
+const $g = document.getElementById('grand');
+
+if (error) { $.textContent = 'Error: ' + error.message; }
+else if (!data?.length) { $.innerHTML = '<div class="italic text-gray-500">No approved entries yet.</div>'; }
+else {
+  // Group by company
+  const groups = {};
+  for (const r of data) (groups[r.company_name] ||= []).push(r);
+  let grandTotal = 0;
+  $.innerHTML = Object.entries(groups).map(([company, rows]) => {
+    const total = rows.reduce((a, r) => a + r.total_cost_cents, 0);
+    grandTotal += total;
+    return `
+      <details class="bg-white rounded-lg shadow-sm" open>
+        <summary class="px-4 py-3 cursor-pointer font-semibold flex justify-between">
+          <span>${company} <span class="text-gray-500 font-normal text-xs">(${rows.length} entries)</span></span>
+          <span>${fmt(total)}</span>
+        </summary>
+        <table class="w-full text-xs">
+          <thead class="bg-gray-50 text-gray-600 text-left">
+            <tr>
+              <th class="px-3 py-1.5">Date</th>
+              <th class="px-3 py-1.5">Name</th>
+              <th class="px-3 py-1.5">Zone</th>
+              <th class="px-3 py-1.5">Type</th>
+              <th class="px-3 py-1.5 text-right">Hours</th>
+              <th class="px-3 py-1.5 text-right">Labour</th>
+              <th class="px-3 py-1.5 text-right">Travel</th>
+              <th class="px-3 py-1.5 text-right">Accom</th>
+              <th class="px-3 py-1.5 text-right">Mats</th>
+              <th class="px-3 py-1.5 text-right">Total</th>
+              <th class="px-3 py-1.5">Paid?</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr class="border-t">
+                <td class="px-3 py-1.5">${r.date}</td>
+                <td class="px-3 py-1.5">${r.person_name}</td>
+                <td class="px-3 py-1.5 text-gray-600">${r.zone_name}</td>
+                <td class="px-3 py-1.5 text-gray-600">${r.type}</td>
+                <td class="px-3 py-1.5 text-right">${r.total_hours ? (+r.total_hours).toFixed(2) : ''}</td>
+                <td class="px-3 py-1.5 text-right">${fmt(r.labour_cost_cents)}</td>
+                <td class="px-3 py-1.5 text-right">${fmt(r.travel_cost_cents)}</td>
+                <td class="px-3 py-1.5 text-right">${fmt(r.accom_cost_cents)}</td>
+                <td class="px-3 py-1.5 text-right">${fmt(r.materials_cost_cents)}</td>
+                <td class="px-3 py-1.5 text-right font-medium">${fmt(r.total_cost_cents)}</td>
+                <td class="px-3 py-1.5">${r.marked_paid ? '✓' : ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </details>
+    `;
+  }).join('');
+  $g.innerHTML = `<span>Total owed</span><span>${fmt(grandTotal)}</span>`;
+}
+
+document.getElementById('export-csv').addEventListener('click', () => {
+  if (!data?.length) return;
+  const cols = ['date','company_name','person_name','zone_name','type','total_hours',
+                'labour_cost_cents','travel_cost_cents','accom_cost_cents',
+                'materials_cost_cents','equipment_cost_cents','total_cost_cents','marked_paid'];
+  const csv = [cols.join(',')].concat(
+    data.map(r => cols.map(c => {
+      let v = r[c]; if (v === null || v === undefined) v = '';
+      if (typeof v === 'string' && v.includes(',')) v = `"${v}"`;
+      return v;
+    }).join(','))
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `trakx-ap-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+</script>
+</body>
+</html>

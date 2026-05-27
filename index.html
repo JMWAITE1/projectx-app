@@ -3,42 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX — Dashboard</title>
+<title>TrakX — Fonterra Maungaturoto 26</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.03</div>
+<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.04</div>
 
-<div class="max-w-6xl mx-auto px-6 py-8">
-  <header class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">TrakX</h1>
-    <p class="text-gray-500">Project costing for NGL site-maintenance jobs</p>
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <header class="mb-6">
+    <div class="text-sm text-gray-500">Fonterra</div>
+    <h1 class="text-3xl font-bold text-gray-900">Maungaturoto 26 — Operations Dashboard</h1>
   </header>
 
-  <div class="grid md:grid-cols-2 gap-4">
-
-    <a href="submit.html?p=fonterra-m26"
-       class="block bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-      <div class="text-sm text-gray-500 mb-1">Public form</div>
-      <div class="text-lg font-semibold text-gray-900">Submit hours / materials / accom</div>
-      <div class="text-sm text-blue-700 mt-2">→ submit.html?p=fonterra-m26</div>
-    </a>
-
-    <a href="admin.html"
-       class="block bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-      <div class="text-sm text-gray-500 mb-1">Admin</div>
-      <div class="text-lg font-semibold text-gray-900">Projects, zones, people, rates</div>
-      <div class="text-sm text-blue-700 mt-2">→ admin.html</div>
-    </a>
-
+  <!-- KPI tiles -->
+  <div id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div class="bg-white p-4 rounded-lg shadow-sm animate-pulse h-24 col-span-full text-gray-400 text-sm italic">Loading…</div>
   </div>
 
-  <section class="mt-12 bg-white rounded-xl p-6 shadow-sm" id="zones-card">
-    <h2 class="text-xl font-semibold text-gray-900 mb-4">Fonterra Maungaturoto 26 — Zones</h2>
-    <div id="zones-content" class="text-gray-500">Loading…</div>
+  <!-- Zone progress -->
+  <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-4">Zones vs PO target</h2>
+    <div id="zones" class="space-y-3"></div>
   </section>
 
-  <p class="text-xs text-gray-400 mt-12">Coming next: project dashboard with KPI tiles, GP-by-zone chart, drill-down line items, AP/AR reports.</p>
+  <!-- Quick links -->
+  <section class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <a href="submit.html?p=fonterra-m26" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
+      <div class="text-xs text-gray-500">Public form</div>
+      <div class="font-semibold text-gray-900">Submit hours / materials / accom</div>
+    </a>
+    <a href="approve.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
+      <div class="text-xs text-gray-500">PM</div>
+      <div class="font-semibold text-gray-900">Approve pending entries</div>
+      <div id="pending-pill" class="inline-block mt-2 text-xs bg-amber-100 text-amber-800 rounded-full px-2 py-0.5 hidden"></div>
+    </a>
+    <a href="ap.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
+      <div class="text-xs text-gray-500">Office</div>
+      <div class="font-semibold text-gray-900">Accounts Payable</div>
+    </a>
+    <a href="ar.html" class="block bg-white p-5 rounded-lg shadow-sm hover:shadow-md">
+      <div class="text-xs text-gray-500">Office</div>
+      <div class="font-semibold text-gray-900">Accounts Receivable</div>
+    </a>
+  </section>
+
+  <p class="text-xs text-gray-400">
+    UI is rough — function first, polish later. See <a href="https://github.com/JMWAITE1/trakx-app/blob/main/TODO.md" class="underline">TODO.md</a>.
+  </p>
 </div>
 
 <script type="module">
@@ -47,28 +58,77 @@ const sb = createClient(
   'https://uhodycdbkwocvptiffks.supabase.co',
   'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
 );
+const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
+const pct = n => (n == null ? '—' : (+n).toFixed(0) + '%');
 
+// Zone rollup
 const { data: zones } = await sb
-  .from('trakx_zones')
-  .select('name, revenue_target_cents, netsuite_project_id')
-  .eq('project_id', (await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').single()).data?.id)
-  .order('display_order');
+  .from('v_trakx_zone_rollup')
+  .select('*')
+  .order('zone_name');
 
-const $ = document.getElementById('zones-content');
-if (zones && zones.length) {
-  $.innerHTML = `<table class="w-full text-sm">
-    <thead class="text-left text-gray-500 border-b">
-      <tr><th class="py-2">Zone</th><th>NetSuite</th><th class="text-right">PO target</th></tr>
-    </thead>
-    <tbody>` + zones.map(z => `
-      <tr class="border-b last:border-0">
-        <td class="py-2 font-medium text-gray-900">${z.name}</td>
-        <td class="text-gray-600">${z.netsuite_project_id || '—'}</td>
-        <td class="text-right">$${(z.revenue_target_cents / 100).toLocaleString()}</td>
-      </tr>
-    `).join('') + `</tbody></table>`;
-} else {
-  $.textContent = 'No zones found. Run the seed migration.';
+let totalRevenue = 0, totalCost = 0, totalGp = 0, totalTarget = 0, totalHours = 0;
+for (const z of (zones || [])) {
+  totalRevenue += z.revenue_actual_cents;
+  totalCost    += z.total_cost_cents;
+  totalGp      += z.gp_cents;
+  totalTarget  += z.revenue_target_cents;
+  totalHours   += +z.total_hours;
+}
+const totalGpPct = totalRevenue > 0 ? (100 * totalGp / totalRevenue) : 0;
+
+// KPI tiles
+document.getElementById('kpis').innerHTML = [
+  ['Turnover',      fmt(totalRevenue), 'blue'],
+  ['Total Cost',    fmt(totalCost),    'gray'],
+  ['Total GP$',     fmt(totalGp),      'green'],
+  ['GP %',          pct(totalGpPct),   'green'],
+  ['Hours',         (+totalHours).toFixed(0), 'gray'],
+].map(([label, val, c]) => `
+  <div class="bg-white p-4 rounded-lg shadow-sm">
+    <div class="text-xs text-${c}-700 font-medium">${label}</div>
+    <div class="text-2xl font-bold mt-1">${val}</div>
+  </div>
+`).join('');
+
+// Zone bars
+document.getElementById('zones').innerHTML = (zones || []).map(z => {
+  const p = Math.min(100, +z.pct_complete || 0);
+  const over = (+z.pct_complete || 0) > 100;
+  const remaining = z.revenue_target_cents - z.revenue_actual_cents;
+  const alertSoon = !over && remaining < 200000 && z.revenue_target_cents > 0; // <$2k
+  return `
+    <div>
+      <div class="flex justify-between text-sm mb-1">
+        <span class="font-medium">${z.zone_name}</span>
+        <span class="text-gray-600">
+          ${fmt(z.revenue_actual_cents)} of ${fmt(z.revenue_target_cents)}
+          <span class="ml-2 text-xs ${over ? 'text-red-700 font-semibold' : alertSoon ? 'text-amber-700 font-semibold' : 'text-gray-500'}">
+            ${pct(z.pct_complete)}${over ? ' OVER' : alertSoon ? ` (${fmt(remaining)} left)` : ''}
+          </span>
+        </span>
+      </div>
+      <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div class="h-full ${over ? 'bg-red-500' : alertSoon ? 'bg-amber-500' : 'bg-blue-600'}"
+             style="width:${p}%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-gray-500 mt-1">
+        <span>${(+z.total_hours).toFixed(0)}h logged</span>
+        <span>GP ${fmt(z.gp_cents)} (${pct(z.gp_pct)})</span>
+      </div>
+    </div>
+  `;
+}).join('') || '<div class="italic text-gray-500">No zones found.</div>';
+
+// Pending pill
+const { count } = await sb
+  .from('trakx_entries')
+  .select('id', { count: 'exact', head: true })
+  .eq('approved', false);
+if (count && count > 0) {
+  const pill = document.getElementById('pending-pill');
+  pill.textContent = `${count} pending`;
+  pill.classList.remove('hidden');
 }
 </script>
 </body>
