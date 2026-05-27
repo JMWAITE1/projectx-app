@@ -7,7 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.05</div>
+<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.06</div>
 
 <div class="max-w-5xl mx-auto px-4 py-6">
   <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
@@ -37,7 +37,7 @@ async function load() {
   $list.innerHTML = '<div class="text-gray-400 italic">Loading…</div>';
   const { data, error } = await sb
     .from('v_trakx_line_totals')
-    .select('*')
+    .select('id, type, date, person_name, company_name, zone_name, start_time, finish_time, total_hours, work_description, comments, materials_description, po_number, total_cost_cents, sell_price_cents')
     .eq('approved', false)
     .order('date', { ascending: false });
   if (error) { $list.textContent = 'Error: ' + error.message; return; }
@@ -57,14 +57,20 @@ async function load() {
       <div class="px-3 py-2 bg-gray-100 text-xs font-medium text-gray-700 rounded-t-lg">${date}</div>
       <table class="w-full">
         <tbody>
-        ${rows.map(r => `
-          <tr class="border-t" data-id="${r.id}">
+        ${rows.map(r => {
+          const detail = r.type === 'hours'
+            ? `${r.start_time?.slice(0,5)}–${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)`
+            : r.type === 'materials'
+              ? (r.po_number ? `PO ${r.po_number}` : '')
+              : '';
+          const desc = r.work_description || r.materials_description || '';
+          return `
+          <tr class="border-t align-top" data-id="${r.id}">
             <td class="px-3 py-2">
               <div class="font-medium">${r.person_name}</div>
-              <div class="text-xs text-gray-500">${r.company_name} • ${r.zone_name} • ${r.type}</div>
-              ${r.type === 'hours'
-                ? `<div class="text-xs text-gray-600">${r.start_time?.slice(0,5)}–${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)</div>`
-                : ''}
+              <div class="text-xs text-gray-500">${r.company_name} • ${r.zone_name} • ${r.type}${detail ? ' • ' + detail : ''}</div>
+              ${desc ? `<div class="text-xs text-gray-700 mt-1 italic">"${desc.replace(/"/g,'&quot;')}"</div>` : ''}
+              ${r.comments ? `<div class="text-xs text-amber-700 mt-1">⚠ ${r.comments.replace(/"/g,'&quot;')}</div>` : ''}
             </td>
             <td class="px-3 py-2 text-right whitespace-nowrap">
               <div class="text-gray-600">cost ${fmt(r.total_cost_cents)}</div>
@@ -75,7 +81,7 @@ async function load() {
                 data-id="${r.id}">Approve</button>
             </td>
           </tr>
-        `).join('')}
+        `;}).join('')}
         </tbody>
       </table>
     </div>
