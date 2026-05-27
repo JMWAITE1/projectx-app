@@ -90,10 +90,18 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.20">
+<body data-page="dashboard" data-version="V0.22">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
+
+  <div class="flex items-center justify-between mb-3" style="flex-wrap:wrap;gap:8px">
+    <div class="text-muted text-xs" id="submit-hint">Send the link below to subbies for time entry.</div>
+    <div class="flex items-center gap-2">
+      <button id="copy-subbie-link" class="btn btn-secondary btn-sm" title="Copy public submit link to clipboard">📋 Copy subbie link</button>
+      <a href="submit.html?p=fonterra-m26" class="btn btn-blue btn-sm" target="_blank">📝 New entry</a>
+    </div>
+  </div>
 
   <div class="dash-grid">
 
@@ -294,6 +302,19 @@ new Chart(document.getElementById('chart-total').getContext('2d'), {
     ...baseOpts,
     onClick: (_, els) => { if (els.length) location.href = 'lines.html'; },
   },
+});
+
+// Copy subbie link button
+document.getElementById('copy-subbie-link').addEventListener('click', async () => {
+  const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'submit.html?p=fonterra-m26';
+  const hint = document.getElementById('submit-hint');
+  try {
+    await navigator.clipboard.writeText(url);
+    hint.innerHTML = `<span class="text-green">✓ Copied — paste it to whoever's submitting their hours.</span>`;
+  } catch {
+    hint.innerHTML = `<span style="font-family:monospace;font-size:11px">${url}</span> <span class="text-muted">(copy manually)</span>`;
+  }
+  setTimeout(() => { hint.textContent = 'Send the link below to subbies for time entry.'; }, 6000);
 });
 
 const { count } = await sb.from('trakx_entries').select('id', { count: 'exact', head: true }).eq('approved', false);

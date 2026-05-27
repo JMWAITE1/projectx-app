@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body data-page="ap" data-version="V0.20">
+<body data-page="ap" data-version="V0.22">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -25,7 +25,14 @@
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
     </div>
   </div>
-  <p class="text-muted text-sm mb-4">What we owe contractors. Excludes internal staff.</p>
+  <p class="text-muted text-sm mb-3">What we owe contractors. Excludes internal staff.</p>
+
+  <div class="card card-tight mb-3" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">From <input id="f-from" type="date" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto"></label>
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">To <input id="f-to" type="date" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto"></label>
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Contractor <select id="f-company" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto;min-width:160px"><option value="">All</option></select></label>
+    <button id="f-clear" class="btn btn-ghost btn-sm" style="margin-left:auto">Clear</button>
+  </div>
 
   <div id="content"></div>
   <div id="grand" class="card flex items-baseline justify-between mt-4" style="background:#f0f5fa;border-left:4px solid var(--blue)"></div>
@@ -39,15 +46,34 @@ const sb = createClient(
 );
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 
-const { data, error } = await sb.from('v_trakx_ap').select('*').order('date');
+const { data: allData, error } = await sb.from('v_trakx_ap').select('*').order('date');
+let data = allData || [];
 const $ = document.getElementById('content');
 const $g = document.getElementById('grand');
 
-if (error) { $.innerHTML = '<div class="empty">Error: ' + error.message + '</div>'; }
-else if (!data?.length) { $.innerHTML = '<div class="empty"><div class="icon">📭</div>No approved entries yet.</div>'; }
-else {
+// Populate contractor filter from data
+const companies = [...new Set(data.map(r => r.company_name))].sort();
+document.getElementById('f-company').innerHTML = '<option value="">All contractors</option>' +
+  companies.map(c => `<option>${c}</option>`).join('');
+
+function filtered() {
+  const from = document.getElementById('f-from').value;
+  const to = document.getElementById('f-to').value;
+  const co = document.getElementById('f-company').value;
+  return data.filter(r => {
+    if (from && r.date < from) return false;
+    if (to   && r.date > to)   return false;
+    if (co   && r.company_name !== co) return false;
+    return true;
+  });
+}
+
+function render() {
+  const rows = filtered();
+  if (error) { $.innerHTML = '<div class="empty">Error: ' + error.message + '</div>'; $g.innerHTML=''; return; }
+  if (!rows.length) { $.innerHTML = '<div class="empty"><div class="icon">📭</div>No entries match the current filters.</div>'; $g.innerHTML=''; return; }
   const groups = {};
-  for (const r of data) (groups[r.company_name] ||= []).push(r);
+  for (const r of rows) (groups[r.company_name] ||= []).push(r);
   let grandTotal = 0;
   $.innerHTML = Object.entries(groups).map(([company, rows]) => {
     const total = rows.reduce((a, r) => a + r.total_cost_cents, 0);
@@ -91,16 +117,25 @@ else {
       </details>
     `;
   }).join('');
-  $g.innerHTML = `<span class="font-semibold text-lg">Total owed</span><span class="text-lg font-bold" style="font-variant-numeric:tabular-nums">${fmt(grandTotal)}</span>`;
+  $g.innerHTML = `<span class="font-semibold text-lg">Total owed${(document.getElementById('f-company').value || document.getElementById('f-from').value || document.getElementById('f-to').value) ? ' (filtered)' : ''}</span><span class="text-lg font-bold" style="font-variant-numeric:tabular-nums">${fmt(grandTotal)}</span>`;
 }
 
+['f-from','f-to','f-company'].forEach(id => document.getElementById(id).addEventListener('change', render));
+document.getElementById('f-clear').addEventListener('click', () => {
+  ['f-from','f-to','f-company'].forEach(id => document.getElementById(id).value = '');
+  render();
+});
+
+render();
+
 document.getElementById('export-csv').addEventListener('click', () => {
-  if (!data?.length) return;
+  const rows = filtered();
+  if (!rows.length) return;
   const cols = ['date','company_name','person_name','zone_name','type','total_hours','work_description',
                 'labour_cost_cents','travel_cost_cents','accom_cost_cents',
                 'materials_cost_cents','equipment_cost_cents','total_cost_cents','marked_paid'];
   const csv = [cols.join(',')].concat(
-    data.map(r => cols.map(c => {
+    rows.map(r => cols.map(c => {
       let v = r[c]; if (v === null || v === undefined) v = '';
       if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = `"${v.replace(/"/g,'""')}"`;
       return v;

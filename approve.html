@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body data-page="approve" data-version="V0.20">
+<body data-page="approve" data-version="V0.22">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -24,11 +24,19 @@
   </div>
   <p class="text-muted text-sm mb-4">PM ticks rows below. Auth handled by Richard.</p>
 
-  <div class="card card-tight mb-4 flex items-center gap-3" style="flex-wrap:wrap">
+  <div class="card card-tight mb-3 flex items-center gap-3" style="flex-wrap:wrap">
     <label class="label" for="pm-name" style="margin-bottom:0">PM name</label>
-    <input id="pm-name" class="field field-sm" style="max-width:240px" placeholder="who's approving">
-    <button id="approve-all" class="btn btn-success btn-sm" style="margin-left:auto">Approve all</button>
+    <input id="pm-name" class="field field-sm" style="max-width:200px" placeholder="who's approving">
+    <button id="approve-all" class="btn btn-success btn-sm" style="margin-left:auto">Approve all visible</button>
     <span id="count" class="text-muted text-sm"></span>
+  </div>
+
+  <div class="card card-tight mb-3" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">From <input id="f-from" type="date" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto"></label>
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">To <input id="f-to" type="date" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto"></label>
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Contractor <select id="f-company" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto;min-width:140px"><option value="">All</option></select></label>
+    <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Zone <select id="f-zone" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto;min-width:130px"><option value="">All</option></select></label>
+    <button id="f-clear" class="btn btn-ghost btn-sm" style="margin-left:auto">Clear</button>
   </div>
 
   <div id="list" class="flex" style="flex-direction:column;gap:14px"></div>
@@ -54,15 +62,41 @@ async function load() {
     .order('date', { ascending: false });
   if (error) { $list.innerHTML = '<div class="empty">Error: ' + error.message + '</div>'; return; }
   allRows = data || [];
-  if (!allRows.length) {
-    $list.innerHTML = '<div class="empty"><div class="icon">✓</div>All caught up — no pending entries.</div>';
-    $count.textContent = '0 pending';
+  // Populate filter dropdowns
+  const cos = [...new Set(allRows.map(r => r.company_name))].sort();
+  const zns = [...new Set(allRows.map(r => r.zone_name))].sort();
+  document.getElementById('f-company').innerHTML = '<option value="">All contractors</option>' + cos.map(c => `<option>${c}</option>`).join('');
+  document.getElementById('f-zone').innerHTML    = '<option value="">All zones</option>'       + zns.map(z => `<option>${z}</option>`).join('');
+  render();
+}
+
+function filtered() {
+  const from = document.getElementById('f-from').value;
+  const to   = document.getElementById('f-to').value;
+  const co   = document.getElementById('f-company').value;
+  const zone = document.getElementById('f-zone').value;
+  return allRows.filter(r => {
+    if (from && r.date < from) return false;
+    if (to   && r.date > to)   return false;
+    if (co   && r.company_name !== co) return false;
+    if (zone && r.zone_name !== zone) return false;
+    return true;
+  });
+}
+
+function render() {
+  const rows = filtered();
+  if (!rows.length) {
+    $list.innerHTML = allRows.length
+      ? '<div class="empty">No entries match the current filters.</div>'
+      : '<div class="empty"><div class="icon">✓</div>All caught up — no pending entries.</div>';
+    $count.textContent = allRows.length ? `0 of ${allRows.length}` : '0 pending';
     return;
   }
-  $count.textContent = `${allRows.length} pending`;
+  $count.textContent = rows.length === allRows.length ? `${rows.length} pending` : `${rows.length} of ${allRows.length} pending`;
 
   const byDate = {};
-  for (const r of allRows) (byDate[r.date] ||= []).push(r);
+  for (const r of rows) (byDate[r.date] ||= []).push(r);
 
   $list.innerHTML = Object.entries(byDate).map(([date, rows]) => `
     <div class="card" style="padding:0">
@@ -126,9 +160,16 @@ async function approve(ids) {
 }
 
 document.getElementById('approve-all').addEventListener('click', () => {
-  if (!allRows.length) return;
-  if (!confirm(`Approve all ${allRows.length} pending entries?`)) return;
-  approve(allRows.map(r => r.id));
+  const rows = filtered();
+  if (!rows.length) return;
+  if (!confirm(`Approve all ${rows.length} visible pending entries?`)) return;
+  approve(rows.map(r => r.id));
+});
+
+['f-from','f-to','f-company','f-zone'].forEach(id => document.getElementById(id).addEventListener('change', render));
+document.getElementById('f-clear').addEventListener('click', () => {
+  ['f-from','f-to','f-company','f-zone'].forEach(id => document.getElementById(id).value = '');
+  render();
 });
 
 load();
