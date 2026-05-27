@@ -42,9 +42,14 @@
     white-space: nowrap;
   }
   .lines-table tbody td.wrap { white-space: normal; max-width: 220px; }
-  .lines-table tbody tr:hover td { background: var(--gray-50); cursor: pointer; }
-  .lines-table tbody tr.expanded { background: #fffaf0; }
-  .lines-table tbody tr.expanded td { background: #fffaf0; }
+  /* Alternating shade BY DATE — every row on the same day shares a
+     background so the eye can group them visually. */
+  .lines-table tbody tr.dg-a td { background: #f4f7fb; }
+  .lines-table tbody tr.dg-b td { background: white; }
+  .lines-table tbody tr.dg-a:hover td,
+  .lines-table tbody tr.dg-b:hover td { background: #e8f0fc; cursor: pointer; }
+  .lines-table tbody tr.expanded td,
+  .lines-table tbody tr.detail-row td { background: #fffaf0 !important; }
   .lines-table .num { text-align: right; }
   .lines-table .badge { font-size: 10px; padding: 1px 6px; }
   .lines-table .approved { color: var(--green); font-weight: 700; }
@@ -74,7 +79,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V0.15">
+<body data-page="lines" data-version="V0.16">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -262,13 +267,17 @@ function render() {
     return;
   }
 
+  let prevDate = null;
+  let groupFlag = false;
   $('lines-tbody').innerHTML = rows.map(r => {
+    if (r.date !== prevDate) { groupFlag = !groupFlag; prevDate = r.date; }
+    const dgClass = groupFlag ? 'dg-a' : 'dg-b';
     const typeBadge = `<span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span>`;
     const statusBadge = r.approved
       ? `<span class="approved">✓ ${r.approved_by || ''}</span>`
       : `<span class="pending">pending</span>`;
     return `
-      <tr data-id="${r.id}">
+      <tr class="${dgClass}" data-id="${r.id}">
         <td>${r.date}</td>
         <td>${typeBadge}</td>
         <td>${r.person_name}</td>
