@@ -13,109 +13,133 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
+<style>
+  .admin-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
+
+  .rates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    font-size: 12px;
+  }
+  .rates-grid label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--gray-700); }
+  .rates-grid label span:first-child { font-weight: 500; }
+  .rates-grid input.field {
+    min-height: 28px;
+    padding: 4px 8px;
+    font-size: 13px;
+    width: 80px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rates-section-label {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-top: 4px;
+    margin-bottom: 2px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--line);
+  }
+  .rates-section-label:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+
+  .compact-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .compact-table th { background: var(--gray-50); padding: 4px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .compact-table th.num { text-align: right; }
+  .compact-table td { padding: 3px 6px; border-bottom: 1px solid var(--gray-100); }
+  .compact-table tr:last-child td { border-bottom: none; }
+  .compact-table input.field, .compact-table select.field { min-height: 26px; padding: 2px 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .compact-table input.num { text-align: right; }
+  .compact-table .btn { min-height: 24px; padding: 3px 8px; font-size: 11px; }
+  .compact-table .check input[type="checkbox"] { width: 14px; height: 14px; margin: 0; }
+
+  .row-add-btn { background: var(--gray-100); color: var(--gray-700); border: 1px dashed var(--gray-300); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .row-add-btn:hover { background: var(--gray-200); color: var(--navy); }
+</style>
 </head>
-<body data-page="admin" data-version="V0.11">
+<body data-page="admin" data-version="V0.12">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
-  <h1 class="mb-2">Admin</h1>
-  <p class="text-muted text-sm mb-4">Edit rates, zones, people. Auth wraps this (Richard).</p>
+  <div class="flex items-baseline justify-between mb-3">
+    <h1>Admin</h1>
+    <span class="text-muted text-xs">Auth (Richard) will gate this later.</span>
+  </div>
 
-  <!-- Project Rates -->
-  <section class="card">
-    <div class="card-header">
-      <span>Project rates</span>
-      <span class="sub">All editable — applies to new entries only (history frozen).</span>
-    </div>
-    <form id="rates-form" class="grid-3">
-      <div class="field-group">
-        <label class="label" for="day_sell">Day sell rate $/h</label>
-        <input id="day_sell" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="night_sell">Night sell rate $/h</label>
-        <input id="night_sell" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="bonus_pct">Bonus %</label>
-        <input id="bonus_pct" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="travel_cost">Travel cost $/km</label>
-        <input id="travel_cost" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="travel_sell">Travel sell $/km</label>
-        <input id="travel_sell" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="mat_markup">Materials markup %</label>
-        <input id="mat_markup" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="accom_cost">Accom cost $/night</label>
-        <input id="accom_cost" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="accom_sell">Accom sell $/night</label>
-        <input id="accom_sell" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="eq_markup">Equipment markup %</label>
-        <input id="eq_markup" type="number" step="0.01" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="day_start">Day starts at hour</label>
-        <input id="day_start" type="number" min="0" max="23" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="day_end">Day ends at hour</label>
-        <input id="day_end" type="number" min="0" max="23" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="lunch_min">Lunch break (min)</label>
-        <input id="lunch_min" type="number" min="0" class="field field-sm">
-      </div>
-      <div class="field-group">
-        <label class="label" for="lunch_thresh">Lunch threshold (h)</label>
-        <input id="lunch_thresh" type="number" step="0.25" class="field field-sm">
-      </div>
-      <div style="grid-column: 1 / -1" class="flex items-center gap-3 mt-2">
-        <button type="submit" class="btn btn-primary">Save rates</button>
-        <span id="rates-msg" class="text-sm"></span>
-      </div>
-    </form>
-    <div class="field-help mt-3">
-      NZ Employment Law (Holidays Act): &gt; 4h = 1 paid 10min rest; &gt; 6h = 2 paid 10min rests + 1 unpaid 30min meal break.
-    </div>
-  </section>
+  <div class="admin-grid">
 
-  <!-- Zones -->
-  <section class="card">
-    <div class="card-header">
-      <span>Zones</span>
-      <button id="add-zone" class="btn btn-blue btn-sm">+ Add zone</button>
-    </div>
-    <div id="zones-rows"></div>
-  </section>
+    <section class="card card-tight">
+      <div class="card-header">Project rates</div>
+      <form id="rates-form" class="rates-grid">
+        <div class="rates-section-label">Labour ($/h)</div>
+        <label><span>Day sell</span> <input id="day_sell" type="number" step="0.01" class="field num"></label>
+        <label><span>Night sell</span> <input id="night_sell" type="number" step="0.01" class="field num"></label>
+        <label><span>Bonus %</span> <input id="bonus_pct" type="number" step="0.01" class="field num"></label>
+        <label><span></span><span></span></label>
 
-  <!-- People -->
-  <section class="card">
-    <div class="card-header">
-      <span>People + rates</span>
-      <button id="add-person" class="btn btn-blue btn-sm">+ Add person</button>
-    </div>
-    <div id="people-rows"></div>
-  </section>
+        <div class="rates-section-label">Travel ($/km)</div>
+        <label><span>Cost</span> <input id="travel_cost" type="number" step="0.01" class="field num"></label>
+        <label><span>Sell</span> <input id="travel_sell" type="number" step="0.01" class="field num"></label>
 
-  <!-- Companies -->
-  <section class="card">
-    <div class="card-header">
-      <span>Companies</span>
-      <button id="add-company" class="btn btn-blue btn-sm">+ Add company</button>
+        <div class="rates-section-label">Accommodation ($/night)</div>
+        <label><span>Cost</span> <input id="accom_cost" type="number" step="0.01" class="field num"></label>
+        <label><span>Sell</span> <input id="accom_sell" type="number" step="0.01" class="field num"></label>
+
+        <div class="rates-section-label">Markup %</div>
+        <label><span>Materials</span> <input id="mat_markup" type="number" step="0.01" class="field num"></label>
+        <label><span>Equipment</span> <input id="eq_markup" type="number" step="0.01" class="field num"></label>
+
+        <div class="rates-section-label">Hours & breaks</div>
+        <label><span>Day starts (h)</span> <input id="day_start" type="number" min="0" max="23" class="field num"></label>
+        <label><span>Day ends (h)</span> <input id="day_end" type="number" min="0" max="23" class="field num"></label>
+        <label><span>Lunch (min)</span> <input id="lunch_min" type="number" min="0" class="field num"></label>
+        <label><span>Lunch &gt; (h)</span> <input id="lunch_thresh" type="number" step="0.25" class="field num"></label>
+
+        <div style="grid-column:1/-1" class="flex items-center gap-2 mt-2">
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+          <span id="rates-msg" class="text-xs"></span>
+        </div>
+      </form>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <section class="card card-tight">
+        <div class="card-header">
+          <span>Zones</span>
+          <button id="add-zone" class="row-add-btn">+ Add zone</button>
+        </div>
+        <div id="zones-rows" style="overflow-x:auto"></div>
+      </section>
+
+      <section class="card card-tight">
+        <div class="card-header">
+          <span>People + pay rates</span>
+          <button id="add-person" class="row-add-btn">+ Add person</button>
+        </div>
+        <div id="people-rows" style="overflow-x:auto"></div>
+      </section>
+
+      <section class="card card-tight">
+        <div class="card-header">
+          <span>Companies</span>
+          <button id="add-company" class="row-add-btn">+ Add company</button>
+        </div>
+        <div id="companies-rows" style="overflow-x:auto"></div>
+      </section>
+
     </div>
-    <div id="companies-rows"></div>
-  </section>
+  </div>
 </main>
 
 <script type="module">
@@ -132,8 +156,7 @@ let zones = [];
 
 async function callAdmin(body) {
   const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-admin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   const j = await r.json();
@@ -189,11 +212,10 @@ async function loadAll() {
 document.getElementById('rates-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = document.getElementById('rates-msg');
-  msg.textContent = 'Saving…'; msg.className = 'text-sm text-muted';
+  msg.textContent = 'Saving…'; msg.className = 'text-xs text-muted';
   try {
     await callAdmin({
-      op: 'update_project_rates',
-      project_id: projectId,
+      op: 'update_project_rates', project_id: projectId,
       day_sell_rate_cents:        d2c(document.getElementById('day_sell').value),
       night_sell_rate_cents:      d2c(document.getElementById('night_sell').value),
       bonus_pct:                  parseFloat(document.getElementById('bonus_pct').value),
@@ -208,33 +230,33 @@ document.getElementById('rates-form').addEventListener('submit', async (e) => {
       lunch_break_minutes:        parseInt(document.getElementById('lunch_min').value, 10),
       lunch_break_threshold_hours:parseFloat(document.getElementById('lunch_thresh').value),
     });
-    msg.textContent = '✓ Saved'; msg.className = 'text-sm text-green';
+    msg.textContent = '✓ Saved'; msg.className = 'text-xs text-green';
   } catch (e) {
-    msg.textContent = '⚠ ' + e.message; msg.className = 'text-sm text-red';
+    msg.textContent = '⚠ ' + e.message; msg.className = 'text-xs text-red';
   }
 });
 
 function renderZones() {
   document.getElementById('zones-rows').innerHTML = `
-    <div style="overflow-x:auto"><table class="table">
+    <table class="compact-table">
       <thead><tr>
-        <th>Name</th><th>NetSuite #</th><th>PO #</th>
-        <th class="num">Target $</th><th class="num">Order</th><th></th><th></th>
+        <th>#</th><th>Name</th><th>NetSuite</th><th>PO #</th>
+        <th class="num">Target $</th><th></th><th></th>
       </tr></thead>
       <tbody>
         ${zones.map(z => `
           <tr data-id="${z.id}">
-            <td><input class="field field-sm" value="${z.name||''}" data-f="name" style="min-width:140px"></td>
-            <td><input class="field field-sm" value="${z.netsuite_project_id||''}" data-f="netsuite_project_id" style="min-width:100px"></td>
-            <td><input class="field field-sm" value="${z.po_number||''}" data-f="po_number" style="min-width:100px"></td>
-            <td class="num"><input class="field field-sm num" type="number" step="1" value="${z.revenue_target_cents ? c2d(z.revenue_target_cents) : ''}" data-f="revenue_target" style="min-width:90px"></td>
-            <td class="num"><input class="field field-sm num" type="number" value="${z.display_order ?? 0}" data-f="display_order" style="min-width:60px"></td>
-            <td><button class="btn btn-primary btn-sm" data-act="save">Save</button></td>
-            <td><button class="btn btn-danger btn-sm" data-act="del">Delete</button></td>
+            <td><input class="field num" type="number" value="${z.display_order ?? 0}" data-f="display_order" style="width:36px"></td>
+            <td><input class="field" value="${z.name||''}" data-f="name" style="min-width:120px"></td>
+            <td><input class="field" value="${z.netsuite_project_id||''}" data-f="netsuite_project_id" style="width:80px"></td>
+            <td><input class="field" value="${z.po_number||''}" data-f="po_number" style="width:80px"></td>
+            <td><input class="field num" type="number" step="1" value="${z.revenue_target_cents ? c2d(z.revenue_target_cents) : ''}" data-f="revenue_target" style="width:90px"></td>
+            <td><button class="btn btn-primary" data-act="save">Save</button></td>
+            <td><button class="btn btn-danger" data-act="del">×</button></td>
           </tr>
         `).join('')}
       </tbody>
-    </table></div>
+    </table>
   `;
   document.querySelectorAll('#zones-rows [data-act]').forEach(b => b.addEventListener('click', zoneAction));
 }
@@ -244,7 +266,7 @@ async function zoneAction(e) {
   const get = f => row.querySelector(`[data-f="${f}"]`).value;
   try {
     if (e.target.dataset.act === 'del') {
-      if (!confirm('Delete this zone? (Will fail if any entries are linked.)')) return;
+      if (!confirm('Delete this zone?')) return;
       await callAdmin({ op: 'delete_zone', zone_id: id });
     } else {
       await callAdmin({
@@ -268,18 +290,18 @@ document.getElementById('add-zone').addEventListener('click', () => {
 
 function renderCompanies() {
   document.getElementById('companies-rows').innerHTML = `
-    <div style="overflow-x:auto"><table class="table">
-      <thead><tr><th>Name</th><th>Type</th><th></th></tr></thead>
+    <table class="compact-table">
+      <thead><tr><th>Name</th><th class="text-center">Internal (NGL)</th><th></th></tr></thead>
       <tbody>
         ${companies.map(c => `
           <tr data-id="${c.id}">
-            <td><input class="field field-sm" value="${c.name}" data-f="name" style="min-width:180px"></td>
-            <td><label class="check"><input type="checkbox" ${c.is_internal ? 'checked' : ''} data-f="is_internal"> Internal (NGL)</label></td>
-            <td><button class="btn btn-primary btn-sm" data-act="save">Save</button></td>
+            <td><input class="field" value="${c.name}" data-f="name" style="min-width:160px"></td>
+            <td class="text-center"><label class="check"><input type="checkbox" ${c.is_internal ? 'checked' : ''} data-f="is_internal"></label></td>
+            <td><button class="btn btn-primary" data-act="save">Save</button></td>
           </tr>
         `).join('')}
       </tbody>
-    </table></div>
+    </table>
   `;
   document.querySelectorAll('#companies-rows [data-act="save"]').forEach(b => b.addEventListener('click', companySave));
 }
@@ -304,31 +326,31 @@ document.getElementById('add-company').addEventListener('click', () => {
 function renderPeople() {
   const companyOptions = companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   document.getElementById('people-rows').innerHTML = `
-    <div style="overflow-x:auto"><table class="table">
+    <table class="compact-table">
       <thead><tr>
         <th>Name</th><th>Company</th>
         <th class="num">Day $/h</th><th class="num">Night $/h</th>
-        <th class="text-center">On project</th>
+        <th class="text-center">On</th>
         <th></th><th></th>
       </tr></thead>
       <tbody>
         ${people.map(p => `
           <tr data-id="${p.id}">
-            <td><input class="field field-sm" value="${p.name||''}" data-f="name" style="min-width:160px"></td>
+            <td><input class="field" value="${p.name||''}" data-f="name" style="min-width:140px"></td>
             <td>
-              <select class="field field-sm" data-f="company_id" style="min-width:140px">
+              <select class="field" data-f="company_id" style="min-width:110px">
                 ${companyOptions.replace(`value="${p.company_id}"`, `value="${p.company_id}" selected`)}
               </select>
             </td>
-            <td class="num"><input class="field field-sm num" type="number" step="0.01" value="${p.latest_rate ? c2d(p.latest_rate.day_pay_rate_cents) : ''}" data-f="day_pay" style="min-width:80px"></td>
-            <td class="num"><input class="field field-sm num" type="number" step="0.01" value="${p.latest_rate ? c2d(p.latest_rate.night_pay_rate_cents) : ''}" data-f="night_pay" style="min-width:80px"></td>
-            <td class="text-center"><input type="checkbox" ${p.assigned ? 'checked' : ''} data-f="assigned" style="width:18px;height:18px"></td>
-            <td><button class="btn btn-primary btn-sm" data-act="save">Save</button></td>
-            <td><button class="btn btn-secondary btn-sm" data-act="rate" title="Push new effective-today rate">+Rate</button></td>
+            <td><input class="field num" type="number" step="0.01" value="${p.latest_rate ? c2d(p.latest_rate.day_pay_rate_cents) : ''}" data-f="day_pay" style="width:64px"></td>
+            <td><input class="field num" type="number" step="0.01" value="${p.latest_rate ? c2d(p.latest_rate.night_pay_rate_cents) : ''}" data-f="night_pay" style="width:64px"></td>
+            <td class="text-center"><label class="check"><input type="checkbox" ${p.assigned ? 'checked' : ''} data-f="assigned"></label></td>
+            <td><button class="btn btn-primary" data-act="save">Save</button></td>
+            <td><button class="btn btn-secondary" data-act="rate" title="Push rate as effective-today">+R</button></td>
           </tr>
         `).join('')}
       </tbody>
-    </table></div>
+    </table>
   `;
   document.querySelectorAll('#people-rows [data-act]').forEach(b => b.addEventListener('click', personAction));
 }
@@ -339,8 +361,7 @@ async function personAction(e) {
   try {
     if (e.target.dataset.act === 'rate') {
       await callAdmin({
-        op: 'set_person_rate',
-        person_id: id,
+        op: 'set_person_rate', person_id: id,
         effective_from: new Date().toISOString().slice(0,10),
         day_pay_rate_cents:   d2c(get('day_pay').value),
         night_pay_rate_cents: d2c(get('night_pay').value),
@@ -360,17 +381,13 @@ async function personAction(e) {
           || p.latest_rate.day_pay_rate_cents !== dayPay
           || p.latest_rate.night_pay_rate_cents !== nightPay) {
         await callAdmin({
-          op: 'set_person_rate',
-          person_id: pid,
+          op: 'set_person_rate', person_id: pid,
           effective_from: new Date().toISOString().slice(0,10),
-          day_pay_rate_cents: dayPay,
-          night_pay_rate_cents: nightPay,
+          day_pay_rate_cents: dayPay, night_pay_rate_cents: nightPay,
         });
       }
       await callAdmin({
-        op: 'assign_person',
-        project_id: projectId,
-        person_id: pid,
+        op: 'assign_person', project_id: projectId, person_id: pid,
         assigned: get('assigned').checked,
       });
     }
