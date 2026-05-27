@@ -74,18 +74,16 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V0.14">
+<body data-page="lines" data-version="V0.15">
 <script src="assets/nav.js" defer></script>
 
-<main class="container" style="max-width:1400px">
-  <div class="flex items-baseline justify-between mb-3 gap-3">
+<main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
+  <a href="index.html" class="btn btn-ghost btn-sm" style="padding-left:0">← Back to dashboard</a>
+
+  <div class="flex items-baseline justify-between mb-3 gap-3" style="margin-top:8px">
     <div>
-      <h1>Lines — every entry, every calc</h1>
-      <div class="text-muted text-xs mt-1">
-        This is the source of truth. Click any row to see the full calculation breakdown.
-        Formula reference: <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527130000_lunch_calc_fix.sql" target="_blank">v_trakx_lines.sql</a> &middot;
-        <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527120000_trakx_schema.sql" target="_blank">schema</a>
-      </div>
+      <h1>Project lines</h1>
+      <div class="text-muted text-xs mt-1">Click any row to inspect the full calculation.</div>
     </div>
     <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
   </div>
@@ -115,7 +113,8 @@
 
   <div class="stats-bar mb-3" id="stats">Loading…</div>
 
-  <div class="card card-tight" style="padding:0;overflow-x:auto">
+  <div class="card card-tight" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto;width:100%">
     <table class="lines-table" id="lines-tbl">
       <thead>
         <tr>
@@ -145,7 +144,14 @@
         <tr><td colspan="20" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
       </tbody>
     </table>
+    </div>
   </div>
+
+  <p class="trakx-footer">
+    Formula reference (PostgreSQL views):
+    <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527140000_night_hours_fix.sql" target="_blank">v_trakx_lines.sql</a> &middot;
+    <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527120000_trakx_schema.sql" target="_blank">schema</a>
+  </p>
 </main>
 
 <script type="module">
