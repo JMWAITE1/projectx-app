@@ -90,16 +90,10 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.25">
+<body data-page="dashboard" data-version="V0.26">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
-
-  <div class="flex items-center justify-end mb-3" style="gap:6px;font-size:12px">
-    <button id="copy-subbie-link" class="btn btn-ghost btn-sm" title="Copy public submit link to subbies">📋 Copy subbie link</button>
-    <a href="submit.html?p=fonterra-m26" class="btn btn-ghost btn-sm" target="_blank" title="Open the smartform">+ New entry</a>
-    <span id="submit-hint" class="text-muted" style="font-size:11px"></span>
-  </div>
 
   <div class="dash-grid">
 
@@ -120,7 +114,7 @@
       <div class="chart-wrap"><canvas id="chart-total"></canvas></div>
     </div>
 
-    <!-- Right: NetSuite + shared chart legend -->
+    <!-- Right: NetSuite + chart legend + submit shortcut -->
     <div class="side-col">
       <div class="side-card">
         <div class="side-title">NetSuite Projects</div>
@@ -129,6 +123,14 @@
       <div class="side-card">
         <div class="side-title">Chart Series</div>
         <div class="legend-list" id="chart-legend"></div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">Submit</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <a href="submit.html?p=fonterra-m26" target="_blank" class="btn btn-secondary btn-sm" style="justify-content:flex-start">+ New entry</a>
+          <button id="copy-subbie-link" class="btn btn-secondary btn-sm" style="justify-content:flex-start" title="Copy public submit link">📋 Copy subbie link</button>
+          <span id="submit-hint" class="text-muted" style="font-size:11px;margin-top:2px;min-height:14px"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -169,14 +171,14 @@ const sb = createClient(
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 const pct = n => (n == null ? '—' : (+n).toFixed(0) + '%');
 
-// NGL brand-aligned chart palette (matches Project Tracker / QA family,
-// avoids the cheap-saturated default-Chart.js look).
+// NGL brand-aligned chart palette — refined a touch brighter so the
+// bars read clearly without going back to cheap default-Chart.js look.
 const SERIES = [
   { key: 'hours',  label: 'Total Hours',    color: '#94a3b8' },  // slate — neutral utility
   { key: 'costs',  label: 'Total Costs',    color: '#1e3a5f' },  // NGL navy — primary
-  { key: 'gp',     label: 'Total CM$',      color: '#c8a96a' },  // NGL gold — headline metric
-  { key: 'target', label: 'Revenue Target', color: '#7ba88e' },  // muted sage — the goal
-  { key: 'actual', label: 'Revenue Actual', color: '#a85a4a' },  // burnt sienna — the live state
+  { key: 'gp',     label: 'Total CM$',      color: '#d4b370' },  // warmer gold — headline metric
+  { key: 'target', label: 'Revenue Target', color: '#4c9a64' },  // brighter sage — the goal
+  { key: 'actual', label: 'Revenue Actual', color: '#c64a3a' },  // rust red — the live state
 ];
 
 const { data: zones } = await sb
@@ -237,8 +239,8 @@ if (!zones?.length) {
     const over = z.revenue_actual_cents > z.revenue_target_cents;
     const drill = `lines.html?zone=${encodeURIComponent(z.zone_name)}`;
     return `
-      <tr onclick="location.href='${drill}'" title="Click to drill into ${z.zone_name} lines" style="cursor:pointer">
-        <td class="zone-name">${z.zone_name} <span style="color:var(--muted);font-size:11px;font-weight:400">→ lines</span></td>
+      <tr onclick="location.href='${drill}'" title="Click to drill into ${z.zone_name} entries" style="cursor:pointer">
+        <td class="zone-name">${z.zone_name}</td>
         <td class="num">${fmt(z.total_cost_cents)}</td>
         <td class="num">${fmt(z.gp_cents)}</td>
         <td class="num">${fmt(z.revenue_target_cents)}</td>
