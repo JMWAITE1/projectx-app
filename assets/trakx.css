@@ -40,8 +40,10 @@ button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: var(--blue); text-decoration: none; }
 a:hover { text-decoration: underline; }
-h1 { font-size: 22px; font-weight: 700; color: var(--gray-900); }
-h2 { font-size: 16px; font-weight: 600; color: var(--gray-900); }
+/* Match the IMR / Project Tracker h1 size + letter-spacing — gives it
+   the same presence as the rest of the NGL app family. */
+h1 { font-size: 26px; font-weight: 700; color: var(--navy); letter-spacing: 0.3px; line-height: 1.2; }
+h2 { font-size: 17px; font-weight: 600; color: var(--navy); }
 
 /* ── Header / brand ──────────────────────────────────────────────── */
 .trakx-header {

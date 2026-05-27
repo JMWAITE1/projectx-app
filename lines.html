@@ -85,7 +85,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V0.24">
+<body data-page="lines" data-version="V0.25">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -258,7 +258,7 @@ function render() {
     <span>Cost: <strong>${fmt(sumCost)}</strong></span>
     <span>Sell: <strong>${fmt(sumSell)}</strong></span>
     <span>Profit: <strong>${fmtP(sumProfit)}</strong></span>
-    <span>GP%: <strong>${gpPct}%</strong></span>
+    <span>CM%: <strong>${gpPct}%</strong></span>
   `;
 
   // Sort arrows
@@ -423,11 +423,11 @@ function renderCalcDetail(r) {
   blocks.push(`
     <h3>Totals (with internal-staff rule)</h3>
     <div class="calc-block">
-      ${r.is_internal ? `<div class="calc-formula" style="color:var(--amber)">Internal staff (${r.company_name}) — 100% GP applied: profit = sell, no cost on project P&amp;L.</div>` : ''}
+      ${r.is_internal ? `<div class="calc-formula" style="color:var(--amber)">Internal staff (${r.company_name}) — 100% CM applied (internal staff cost is overhead, not project P&amp;L).</div>` : ''}
       <div class="calc-line"><span>Total cost</span><span>${fmt(r.total_cost_cents)}</span></div>
       <div class="calc-line"><span>Sell price</span><span>${fmt(r.sell_price_cents)}</span></div>
       <div class="calc-line total"><span>Profit (sell - cost)</span><span>${fmtP(r.profit_cents)}</span></div>
-      <div class="calc-line"><span>GP %</span><span>${r.sell_price_cents > 0 ? ((100 * r.profit_cents / r.sell_price_cents).toFixed(1) + '%') : '—'}</span></div>
+      <div class="calc-line"><span>CM %</span><span>${r.sell_price_cents > 0 ? ((100 * r.profit_cents / r.sell_price_cents).toFixed(1) + '%') : '—'}</span></div>
     </div>
 
     <h3>Approval &amp; audit</h3>
