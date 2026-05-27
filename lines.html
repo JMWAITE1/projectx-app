@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrakX — Lines</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrakX">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
+<link rel="stylesheet" href="assets/trakx.css">
+<style>
+  /* This page is the canonical "where I can see EVERYTHING" view —
+     every entry, every input, every calculated field. Equivalent of
+     Smartsheet "01. Summary Database". Nothing hidden, nothing
+     bundled behind a single $ figure. */
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters .field { min-height: 30px; padding: 4px 8px; font-size: 13px; width: auto; min-width: 140px; }
+  .filters .field-sm { min-width: 110px; }
+  .filters label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+  .lines-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .lines-table thead th {
+    background: var(--navy); color: white;
+    padding: 6px 8px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    text-align: left; white-space: nowrap; cursor: pointer;
+    border-bottom: 2px solid var(--gold);
+  }
+  .lines-table thead th.num { text-align: right; }
+  .lines-table thead th:hover { background: var(--navy-h); }
+  .lines-table thead th .sort-arrow { color: var(--gold); margin-left: 3px; font-size: 9px; }
+  .lines-table tbody td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--gray-100);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .lines-table tbody td.wrap { white-space: normal; max-width: 220px; }
+  .lines-table tbody tr:hover td { background: var(--gray-50); cursor: pointer; }
+  .lines-table tbody tr.expanded { background: #fffaf0; }
+  .lines-table tbody tr.expanded td { background: #fffaf0; }
+  .lines-table .num { text-align: right; }
+  .lines-table .badge { font-size: 10px; padding: 1px 6px; }
+  .lines-table .approved { color: var(--green); font-weight: 700; }
+  .lines-table .pending  { color: var(--amber); font-weight: 700; }
+
+  .calc-detail {
+    background: #fff8e1; border-top: 2px solid var(--gold);
+    padding: 12px 16px; font-size: 12px;
+  }
+  .calc-detail h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--navy); margin-bottom: 6px; font-weight: 700; }
+  .calc-block { background: white; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
+  .calc-line { display: flex; justify-content: space-between; padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .calc-line.total { border-top: 1px solid var(--gray-200); padding-top: 4px; margin-top: 4px; font-weight: 700; color: var(--navy); }
+  .calc-formula { font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; font-size: 11px; color: var(--gray-600); background: var(--gray-50); padding: 4px 6px; border-radius: 4px; margin: 4px 0; }
+
+  .stats-bar {
+    background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 8px 12px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 16px;
+  }
+  .stats-bar strong { color: var(--navy); font-variant-numeric: tabular-nums; }
+
+  .calc-link {
+    background: var(--gold); color: var(--navy);
+    padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+    text-decoration: none; display: inline-block;
+  }
+  .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
+</style>
+</head>
+<body data-page="lines" data-version="V0.14">
+<script src="assets/nav.js" defer></script>
+
+<main class="container" style="max-width:1400px">
+  <div class="flex items-baseline justify-between mb-3 gap-3">
+    <div>
+      <h1>Lines — every entry, every calc</h1>
+      <div class="text-muted text-xs mt-1">
+        This is the source of truth. Click any row to see the full calculation breakdown.
+        Formula reference: <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527130000_lunch_calc_fix.sql" target="_blank">v_trakx_lines.sql</a> &middot;
+        <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527120000_trakx_schema.sql" target="_blank">schema</a>
+      </div>
+    </div>
+    <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+  </div>
+
+  <div class="card card-tight mb-3 filters">
+    <label>From <input id="f-from" type="date" class="field"></label>
+    <label>To <input id="f-to" type="date" class="field"></label>
+    <label>Zone <select id="f-zone" class="field"><option value="">All zones</option></select></label>
+    <label>Person <select id="f-person" class="field"><option value="">All people</option></select></label>
+    <label>Type
+      <select id="f-type" class="field field-sm">
+        <option value="">All</option>
+        <option value="hours">Hours</option>
+        <option value="materials">Materials</option>
+        <option value="accom">Accom</option>
+      </select>
+    </label>
+    <label>Approved
+      <select id="f-approved" class="field field-sm">
+        <option value="">Both</option>
+        <option value="true">Approved</option>
+        <option value="false">Pending</option>
+      </select>
+    </label>
+    <button id="f-clear" class="btn btn-ghost btn-sm">Clear filters</button>
+  </div>
+
+  <div class="stats-bar mb-3" id="stats">Loading…</div>
+
+  <div class="card card-tight" style="padding:0;overflow-x:auto">
+    <table class="lines-table" id="lines-tbl">
+      <thead>
+        <tr>
+          <th data-sort="date">Date</th>
+          <th data-sort="type">Type</th>
+          <th data-sort="person_name">Person</th>
+          <th data-sort="company_name">Company</th>
+          <th data-sort="zone_name">Zone</th>
+          <th>Start</th>
+          <th>Finish</th>
+          <th class="num" data-sort="gross_hours">Gross h</th>
+          <th class="num" data-sort="lunch_deduction_hours">Lunch</th>
+          <th class="num" data-sort="day_hours">Day h</th>
+          <th class="num" data-sort="night_hours">Night h</th>
+          <th class="num" data-sort="total_hours">Paid h</th>
+          <th class="num" data-sort="labour_cost_cents">Lab cost</th>
+          <th class="num" data-sort="travel_cost_cents">Travel cost</th>
+          <th class="num" data-sort="materials_cost_cents">Mat cost</th>
+          <th class="num" data-sort="total_cost_cents">Total cost</th>
+          <th class="num" data-sort="labour_sell_cents">Lab sell</th>
+          <th class="num" data-sort="sell_price_cents">Sell</th>
+          <th class="num" data-sort="profit_cents">Profit</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="lines-tbody">
+        <tr><td colspan="20" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
+const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
+
+const fmt  = c => '$' + (Math.round(c / 100)).toLocaleString();
+const fmtP = c => (c < 0 ? '-' : '') + '$' + (Math.round(Math.abs(c) / 100)).toLocaleString();
+const numh = h => h == null ? '' : (+h).toFixed(2);
+
+let allLines = [];
+let allRates = {};        // project rates for showing formula values
+let sortKey  = 'date';
+let sortDir  = 'desc';
+
+const $ = id => document.getElementById(id);
+
+// URL pre-filter: ?zone=Whey%20Plant&from=2026-03-01 etc.
+const params = new URLSearchParams(location.search);
+async function load() {
+  // Project + rates so calc breakdown can show the live constants used
+  const { data: project } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').single();
+  if (project) {
+    const { data: pr } = await sb.from('trakx_project_rates').select('*').eq('project_id', project.id).single();
+    allRates = pr || {};
+  }
+
+  // Pull all lines
+  const { data, error } = await sb.from('v_trakx_line_totals').select('*').limit(5000);
+  if (error) {
+    $('lines-tbody').innerHTML = `<tr><td colspan="20" class="empty">⚠ ${error.message}</td></tr>`;
+    return;
+  }
+  allLines = data || [];
+
+  // Populate filter dropdowns
+  const zones   = [...new Set(allLines.map(r => r.zone_name))].sort();
+  const people  = [...new Set(allLines.map(r => r.person_name))].sort();
+  $('f-zone').innerHTML   = '<option value="">All zones</option>'   + zones.map(z => `<option ${params.get('zone')===z?'selected':''}>${z}</option>`).join('');
+  $('f-person').innerHTML = '<option value="">All people</option>' + people.map(p => `<option ${params.get('person')===p?'selected':''}>${p}</option>`).join('');
+  if (params.get('from'))     $('f-from').value     = params.get('from');
+  if (params.get('to'))       $('f-to').value       = params.get('to');
+  if (params.get('type'))     $('f-type').value     = params.get('type');
+  if (params.get('approved')) $('f-approved').value = params.get('approved');
+
+  render();
+}
+
+function filterRows() {
+  const from = $('f-from').value;
+  const to   = $('f-to').value;
+  const zone = $('f-zone').value;
+  const pers = $('f-person').value;
+  const typ  = $('f-type').value;
+  const app  = $('f-approved').value;
+  return allLines.filter(r => {
+    if (from && r.date < from) return false;
+    if (to   && r.date > to)   return false;
+    if (zone && r.zone_name   !== zone) return false;
+    if (pers && r.person_name !== pers) return false;
+    if (typ  && r.type        !== typ)  return false;
+    if (app !== '' && String(r.approved) !== app) return false;
+    return true;
+  });
+}
+
+function sortRows(rows) {
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (av == null) av = '';
+    if (bv == null) bv = '';
+    if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir;
+    return (Number(av) - Number(bv)) * dir;
+  });
+}
+
+function render() {
+  const rows = sortRows(filterRows());
+
+  // Stats bar
+  const sumCost   = rows.reduce((a, r) => a + r.total_cost_cents, 0);
+  const sumSell   = rows.reduce((a, r) => a + r.sell_price_cents, 0);
+  const sumProfit = rows.reduce((a, r) => a + r.profit_cents, 0);
+  const sumHours  = rows.reduce((a, r) => a + (+r.total_hours || 0), 0);
+  const gpPct     = sumSell > 0 ? (100 * sumProfit / sumSell).toFixed(1) : '0';
+  $('stats').innerHTML = `
+    <span><strong>${rows.length}</strong> rows</span>
+    <span>Hours: <strong>${sumHours.toFixed(0)}</strong></span>
+    <span>Cost: <strong>${fmt(sumCost)}</strong></span>
+    <span>Sell: <strong>${fmt(sumSell)}</strong></span>
+    <span>Profit: <strong>${fmtP(sumProfit)}</strong></span>
+    <span>GP%: <strong>${gpPct}%</strong></span>
+  `;
+
+  // Sort arrows
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    const a = th.querySelector('.sort-arrow');
+    if (a) a.remove();
+    if (th.dataset.sort === sortKey) {
+      th.insertAdjacentHTML('beforeend', `<span class="sort-arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>`);
+    }
+  });
+
+  if (!rows.length) {
+    $('lines-tbody').innerHTML = '<tr><td colspan="20" class="empty">No matching rows.</td></tr>';
+    return;
+  }
+
+  $('lines-tbody').innerHTML = rows.map(r => {
+    const typeBadge = `<span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span>`;
+    const statusBadge = r.approved
+      ? `<span class="approved">✓ ${r.approved_by || ''}</span>`
+      : `<span class="pending">pending</span>`;
+    return `
+      <tr data-id="${r.id}">
+        <td>${r.date}</td>
+        <td>${typeBadge}</td>
+        <td>${r.person_name}</td>
+        <td>${r.company_name}</td>
+        <td>${r.zone_name}</td>
+        <td>${r.start_time ? r.start_time.slice(0,5) : ''}</td>
+        <td>${r.finish_time ? r.finish_time.slice(0,5) + (r.finish_next_day ? ' +1' : '') : ''}</td>
+        <td class="num">${numh(r.gross_hours)}</td>
+        <td class="num">${r.lunch_deduction_hours > 0 ? '-' + numh(r.lunch_deduction_hours) : ''}</td>
+        <td class="num">${numh(r.day_hours)}</td>
+        <td class="num">${numh(r.night_hours)}</td>
+        <td class="num">${numh(r.total_hours)}</td>
+        <td class="num">${r.labour_cost_cents ? fmt(r.labour_cost_cents) : ''}</td>
+        <td class="num">${r.travel_cost_cents ? fmt(r.travel_cost_cents) : ''}</td>
+        <td class="num">${r.materials_cost_cents ? fmt(r.materials_cost_cents) : ''}</td>
+        <td class="num">${fmt(r.total_cost_cents)}</td>
+        <td class="num">${r.labour_sell_cents ? fmt(r.labour_sell_cents) : ''}</td>
+        <td class="num">${fmt(r.sell_price_cents)}</td>
+        <td class="num">${fmtP(r.profit_cents)}</td>
+        <td>${statusBadge}</td>
+      </tr>
+    `;
+  }).join('');
+
+  document.querySelectorAll('#lines-tbody tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => toggleDetail(tr, rows.find(x => x.id === tr.dataset.id)));
+  });
+}
+
+function toggleDetail(tr, r) {
+  const next = tr.nextElementSibling;
+  if (next && next.classList.contains('detail-row')) {
+    next.remove();
+    tr.classList.remove('expanded');
+    return;
+  }
+  tr.classList.add('expanded');
+  const dayPay   = ((r.labour_cost_cents && r.day_hours)   ? (r.labour_cost_cents / (+r.day_hours + +r.night_hours + .0001)) : 0);
+  const breakdown = renderCalcDetail(r);
+  tr.insertAdjacentHTML('afterend', `<tr class="detail-row"><td colspan="20" class="calc-detail">${breakdown}</td></tr>`);
+}
+
+function renderCalcDetail(r) {
+  const blocks = [];
+
+  // Entry inputs
+  blocks.push(`
+    <h3>Inputs (what the subbie / TL submitted)</h3>
+    <div class="calc-block">
+      <div class="calc-line"><span>Type</span><span>${r.type}</span></div>
+      <div class="calc-line"><span>Date</span><span>${r.date}</span></div>
+      <div class="calc-line"><span>Person</span><span>${r.person_name} (${r.company_name})</span></div>
+      <div class="calc-line"><span>Zone</span><span>${r.zone_name}</span></div>
+      ${r.type === 'hours' ? `
+        <div class="calc-line"><span>Start time</span><span>${r.start_time || ''}</span></div>
+        <div class="calc-line"><span>Finish time</span><span>${r.finish_time || ''}${r.finish_next_day ? ' (next day)' : ''}</span></div>
+        <div class="calc-line"><span>Work description</span><span>${r.work_description || '—'}</span></div>
+      ` : ''}
+      ${r.type === 'materials' ? `
+        <div class="calc-line"><span>Materials</span><span>${r.materials_description || ''}</span></div>
+        <div class="calc-line"><span>Material cost (entered)</span><span>${fmt(r.materials_cost_cents || 0)}</span></div>
+        <div class="calc-line"><span>PO #</span><span>${r.po_number || ''}</span></div>
+      ` : ''}
+    </div>
+  `);
+
+  // Hours math
+  if (r.type === 'hours') {
+    blocks.push(`
+      <h3>Hours split (NZ Employment Law defaults)</h3>
+      <div class="calc-block">
+        <div class="calc-formula">gross = finish - start (+24 if next day) = ${numh(r.gross_hours)} h</div>
+        <div class="calc-formula">lunch deduction = ${r.lunch_deduction_hours > 0 ? '0.5 h (shift > 5h)' : '0 h (shift &le; 5h)'} = -${numh(r.lunch_deduction_hours || 0)} h</div>
+        <div class="calc-formula">paid hours = gross - lunch = ${numh(r.total_hours)} h</div>
+        <div class="calc-formula">day window = ${allRates.day_start_hour || 6}:00 - ${allRates.day_end_hour || 18}:00 (per project setting)</div>
+        <div class="calc-line"><span>Day hours (paid, scaled)</span><span>${numh(r.day_hours)} h</span></div>
+        <div class="calc-line"><span>Night hours (paid, scaled)</span><span>${numh(r.night_hours)} h</span></div>
+        <div class="calc-line total"><span>Total paid hours</span><span>${numh(r.total_hours)} h</span></div>
+      </div>
+
+      <h3>Labour cost (what we pay the subbie)</h3>
+      <div class="calc-block">
+        <div class="calc-formula">day_hours &times; day_pay_snapshot + night_hours &times; night_pay_snapshot + total &times; day_pay &times; bonus%</div>
+        <div class="calc-line"><span>Day hours &times; pay rate</span><span>${fmt(r.labour_cost_cents - (r.labour_cost_cents - ((+r.day_hours)*(r.labour_cost_cents/Math.max(1,(+r.day_hours)+(+r.night_hours)+(+r.total_hours)*0.05)))))}</span></div>
+        <div class="calc-line total"><span>Labour cost</span><span>${fmt(r.labour_cost_cents)}</span></div>
+      </div>
+
+      <h3>Labour sell (what we charge the customer)</h3>
+      <div class="calc-block">
+        <div class="calc-formula">day_hours &times; day_sell + night_hours &times; night_sell (project rates: day $${allRates.day_sell_rate_cents ? (allRates.day_sell_rate_cents/100).toFixed(2) : '?'}, night $${allRates.night_sell_rate_cents ? (allRates.night_sell_rate_cents/100).toFixed(2) : '?'})</div>
+        <div class="calc-line total"><span>Labour sell</span><span>${fmt(r.labour_sell_cents)}</span></div>
+      </div>
+    `);
+  }
+
+  // Travel
+  if (r.travel_kms != null && r.travel_kms > 0) {
+    blocks.push(`
+      <h3>Travel</h3>
+      <div class="calc-block">
+        <div class="calc-formula">cost = travel_kms &times; cost_per_km (${allRates.travel_cost_per_km_cents ? '$' + (allRates.travel_cost_per_km_cents/100).toFixed(2) : '?'}/km)</div>
+        <div class="calc-formula">sell = travel_kms &times; sell_per_km (${allRates.travel_sell_per_km_cents ? '$' + (allRates.travel_sell_per_km_cents/100).toFixed(2) : '?'}/km)</div>
+        <div class="calc-line"><span>Travel cost</span><span>${fmt(r.travel_cost_cents)}</span></div>
+        <div class="calc-line"><span>Travel sell</span><span>${fmt(r.travel_sell_cents)}</span></div>
+      </div>
+    `);
+  }
+
+  // Accom
+  if (r.type === 'accom' || r.accom_cost_cents > 0 || r.accom_sell_cents > 0) {
+    blocks.push(`
+      <h3>Accommodation</h3>
+      <div class="calc-block">
+        <div class="calc-formula">cost = nights &times; cost_per_night ($${allRates.accom_cost_per_night_cents ? (allRates.accom_cost_per_night_cents/100).toFixed(2) : '0'}/night)</div>
+        <div class="calc-formula">sell = nights &times; sell_per_night ($${allRates.accom_sell_per_night_cents ? (allRates.accom_sell_per_night_cents/100).toFixed(2) : '0'}/night)</div>
+        <div class="calc-line"><span>Accom cost</span><span>${fmt(r.accom_cost_cents)}</span></div>
+        <div class="calc-line"><span>Accom sell</span><span>${fmt(r.accom_sell_cents)}</span></div>
+      </div>
+    `);
+  }
+
+  // Materials sell side
+  if (r.type === 'materials') {
+    blocks.push(`
+      <h3>Materials sell</h3>
+      <div class="calc-block">
+        <div class="calc-formula">sell = cost &times; (1 + markup% / 100) — current markup ${allRates.materials_markup_pct ?? '0'}%</div>
+        <div class="calc-line"><span>Material cost</span><span>${fmt(r.materials_cost_cents || 0)}</span></div>
+        <div class="calc-line"><span>Material sell</span><span>${fmt(r.materials_sell_cents || 0)}</span></div>
+      </div>
+    `);
+  }
+
+  // Final totals + internal rule
+  blocks.push(`
+    <h3>Totals (with internal-staff rule)</h3>
+    <div class="calc-block">
+      ${r.is_internal ? `<div class="calc-formula" style="color:var(--amber)">Internal staff (${r.company_name}) — 100% GP applied: profit = sell, no cost on project P&amp;L.</div>` : ''}
+      <div class="calc-line"><span>Total cost</span><span>${fmt(r.total_cost_cents)}</span></div>
+      <div class="calc-line"><span>Sell price</span><span>${fmt(r.sell_price_cents)}</span></div>
+      <div class="calc-line total"><span>Profit (sell - cost)</span><span>${fmtP(r.profit_cents)}</span></div>
+      <div class="calc-line"><span>GP %</span><span>${r.sell_price_cents > 0 ? ((100 * r.profit_cents / r.sell_price_cents).toFixed(1) + '%') : '—'}</span></div>
+    </div>
+
+    <h3>Approval &amp; audit</h3>
+    <div class="calc-block">
+      <div class="calc-line"><span>Approved</span><span>${r.approved ? '✓ by ' + (r.approved_by || '?') + ' on ' + (r.approved_at ? r.approved_at.slice(0,10) : '?') : '— pending'}</span></div>
+      <div class="calc-line"><span>Marked paid</span><span>${r.marked_paid ? '✓' : '— payment tracked in NetSuite'}</span></div>
+      <div class="calc-line"><span>Entry id</span><span style="font-family:monospace">${r.id}</span></div>
+    </div>
+  `);
+
+  return blocks.join('');
+}
+
+// Sort handlers
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.sort;
+    if (sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortKey = k; sortDir = 'asc'; }
+    render();
+  });
+});
+
+// Filter handlers
+['f-from','f-to','f-zone','f-person','f-type','f-approved'].forEach(id => {
+  $(id).addEventListener('change', render);
+});
+$('f-clear').addEventListener('click', () => {
+  ['f-from','f-to','f-zone','f-person','f-type','f-approved'].forEach(id => $(id).value = '');
+  render();
+});
+
+$('export-csv').addEventListener('click', () => {
+  const rows = sortRows(filterRows());
+  const cols = ['date','type','person_name','company_name','zone_name','start_time','finish_time','finish_next_day',
+                'gross_hours','lunch_deduction_hours','day_hours','night_hours','total_hours',
+                'labour_cost_cents','travel_cost_cents','accom_cost_cents','materials_cost_cents','equipment_cost_cents','total_cost_cents',
+                'labour_sell_cents','travel_sell_cents','accom_sell_cents','materials_sell_cents','equipment_sell_cents','sell_price_cents',
+                'profit_cents','approved','approved_by','marked_paid','work_description','materials_description','po_number','id'];
+  const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => {
+    let v = r[c]; if (v === null || v === undefined) v = '';
+    if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = `"${v.replace(/"/g,'""')}"`;
+    return v;
+  }).join(','))).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `trakx-lines-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -90,7 +90,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.12">
+<body data-page="dashboard" data-version="V0.14">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -222,9 +222,10 @@ if (!zones?.length) {
 } else {
   zoneTbody.innerHTML = zones.map(z => {
     const over = z.revenue_actual_cents > z.revenue_target_cents;
+    const drill = `lines.html?zone=${encodeURIComponent(z.zone_name)}`;
     return `
-      <tr>
-        <td class="zone-name">${z.zone_name}</td>
+      <tr onclick="location.href='${drill}'" title="Click to drill into ${z.zone_name} lines" style="cursor:pointer">
+        <td class="zone-name">${z.zone_name} <span style="color:var(--muted);font-size:11px;font-weight:400">→ lines</span></td>
         <td class="num">${fmt(z.total_cost_cents)}</td>
         <td class="num">${fmt(z.gp_cents)}</td>
         <td class="num">${fmt(z.revenue_target_cents)}</td>

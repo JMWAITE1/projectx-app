@@ -8,6 +8,7 @@
 (function () {
   const links = [
     { id: 'dashboard', label: 'Dashboard',  href: 'index.html'   },
+    { id: 'lines',     label: 'Lines',      href: 'lines.html'   },
     { id: 'submit',    label: 'Submit',     href: 'submit.html?p=fonterra-m26' },
     { id: 'approve',   label: 'Approve',    href: 'approve.html' },
     { id: 'ap',        label: 'AP',         href: 'ap.html'      },
