@@ -67,7 +67,7 @@
   .row-add-btn:hover { background: var(--gray-200); color: var(--navy); }
 </style>
 </head>
-<body data-page="admin" data-version="V0.12">
+<body data-page="admin" data-version="V0.13">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -164,11 +164,27 @@ async function callAdmin(body) {
   return j;
 }
 
+function showError(target, label, err) {
+  console.error(`[admin] ${label}`, err);
+  const el = document.getElementById(target);
+  if (el) el.innerHTML = `<div class="empty" style="color:var(--red);background:var(--red-bg);padding:8px;border-radius:6px;font-size:12px;text-align:left">⚠ ${label}: ${err?.message || JSON.stringify(err)}</div>`;
+}
+
 async function loadAll() {
-  const { data: project } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').single();
+  const { data: project, error: projErr } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').single();
+  if (projErr || !project) {
+    showError('zones-rows', 'Could not load project (RLS or missing)', projErr);
+    showError('people-rows', 'Could not load project', projErr);
+    showError('companies-rows', 'Could not load project', projErr);
+    return;
+  }
   projectId = project.id;
 
-  const { data: pr } = await sb.from('trakx_project_rates').select('*').eq('project_id', projectId).single();
+  const { data: pr, error: prErr } = await sb.from('trakx_project_rates').select('*').eq('project_id', projectId).single();
+  if (prErr) {
+    document.getElementById('rates-msg').textContent = '⚠ rates load: ' + prErr.message;
+    document.getElementById('rates-msg').className = 'text-xs text-red';
+  }
   if (pr) {
     document.getElementById('day_sell').value     = c2d(pr.day_sell_rate_cents);
     document.getElementById('night_sell').value   = c2d(pr.night_sell_rate_cents);
@@ -185,15 +201,16 @@ async function loadAll() {
     document.getElementById('lunch_thresh').value = pr.lunch_break_threshold_hours;
   }
 
-  const { data: zoneData } = await sb.from('trakx_zones').select('*').eq('project_id', projectId).order('display_order');
-  zones = zoneData || [];
-  renderZones();
+  const { data: zoneData, error: zErr } = await sb.from('trakx_zones').select('*').eq('project_id', projectId).order('display_order');
+  if (zErr) { showError('zones-rows', 'Zones query failed', zErr); }
+  else      { zones = zoneData || []; renderZones(); }
 
-  const { data: companyData } = await sb.from('trakx_companies').select('*').order('name');
-  companies = companyData || [];
-  renderCompanies();
+  const { data: companyData, error: cErr } = await sb.from('trakx_companies').select('*').order('name');
+  if (cErr) { showError('companies-rows', 'Companies query failed', cErr); }
+  else      { companies = companyData || []; renderCompanies(); }
 
-  const { data: peopleData } = await sb.from('trakx_people').select('*').order('name');
+  const { data: peopleData, error: pErr } = await sb.from('trakx_people').select('*').order('name');
+  if (pErr) { showError('people-rows', 'People query failed', pErr); return; }
   people = peopleData || [];
   const { data: rates } = await sb.from('trakx_person_rates')
     .select('person_id, day_pay_rate_cents, night_pay_rate_cents, effective_from')
