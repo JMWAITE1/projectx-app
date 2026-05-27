@@ -14,15 +14,16 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body data-page="ar" data-version="V0.32">
+<body data-page="ar" data-version="V0.33">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
   <div class="flex items-baseline justify-between mb-2 gap-3">
     <h1>Accounts Receivable</h1>
     <div class="flex items-center gap-2" style="flex-shrink:0">
-      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+      <button id="toggle-all" class="btn btn-secondary btn-sm">Expand all</button>
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
     </div>
   </div>
   <p class="text-muted text-sm mb-3">What to invoice the customer. Approved entries only. Grouped by zone.</p>
@@ -95,7 +96,7 @@ function render() {
     const totalHrs = rows.reduce((a, r) => a + (+r.total_hours || 0), 0);
     grandTotal += total;
     return `
-      <details class="card" style="padding:0;overflow:hidden" open>
+      <details class="card" style="padding:0;overflow:hidden">
         <summary style="padding:10px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:15px; background:var(--navy); color:#fff; letter-spacing:0.2px">
           <span style="display:flex;align-items:center;gap:8px">
             <span class="chevron">▶</span>
@@ -138,9 +139,23 @@ function render() {
   $g.innerHTML = `<span class="font-semibold text-lg">Total to invoice${anyFilter ? ' (filtered)' : ''}</span><span class="text-lg font-bold" style="font-variant-numeric:tabular-nums">${fmt(grandTotal)}</span>`;
 }
 
-['f-from','f-to','f-zone','f-company','f-person'].forEach(id => document.getElementById(id).addEventListener('change', render));
+// Toggle-all button. Filters cause re-render which resets to collapsed.
+let allExpanded = false;
+document.getElementById('toggle-all').addEventListener('click', () => {
+  allExpanded = !allExpanded;
+  document.querySelectorAll('#content details').forEach(d => d.open = allExpanded);
+  document.getElementById('toggle-all').textContent = allExpanded ? 'Collapse all' : 'Expand all';
+});
+
+['f-from','f-to','f-zone','f-company','f-person'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+  allExpanded = false;
+  document.getElementById('toggle-all').textContent = 'Expand all';
+  render();
+}));
 document.getElementById('f-clear').addEventListener('click', () => {
   ['f-from','f-to','f-zone','f-company','f-person'].forEach(id => document.getElementById(id).value = '');
+  allExpanded = false;
+  document.getElementById('toggle-all').textContent = 'Expand all';
   render();
 });
 
