@@ -90,7 +90,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.37">
+<body data-page="dashboard" data-version="V0.38">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -323,17 +323,23 @@ const baseOpts = {
     },
     x: {
       grid: { display: false },
-      ticks: { font: { size: 11 }, color: '#1f2937', autoSkip: false },
+      // maxRotation 0 keeps labels horizontal even when there are several
+      // bars — multi-word zone names are passed as arrays below so Chart.js
+      // wraps them onto two lines instead of slanting.
+      ticks: { font: { size: 11 }, color: '#1f2937', autoSkip: false, maxRotation: 0, minRotation: 0 },
     },
   },
 };
 
 // CM$ by Zone — click a bar to open Lines filtered to that zone
 const zoneLabels = (zones || []).map(z => z.zone_name);
+// Split multi-word zone names on space so Chart.js stacks them onto two
+// lines horizontally (matches the "Project total" chart's [['Project','total']] style).
+const zoneLabelsDisplay = zoneLabels.map(name => name.split(' '));
 new Chart(document.getElementById('chart-gp-by-plant').getContext('2d'), {
   type: 'bar',
   data: {
-    labels: zoneLabels,
+    labels: zoneLabelsDisplay,
     datasets: [
       { label: SERIES[0].label, data: zones.map(z => +z.total_hours),                 backgroundColor: SERIES[0].color },
       { label: SERIES[1].label, data: zones.map(z => z.total_cost_cents / 100),       backgroundColor: SERIES[1].color },
