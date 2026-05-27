@@ -90,7 +90,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.36">
+<body data-page="dashboard" data-version="V0.37">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -200,16 +200,33 @@ const alertAtPct = 100 - alertWithinPct;
 const flagged = (zones || []).filter(z => z.revenue_target_cents > 0 && z.pct_complete >= alertAtPct);
 const banner = document.getElementById('zone-alert-banner');
 if (flagged.length) {
-  const items = flagged.map(z => {
-    const over = z.pct_complete >= 100;
-    return `<a href="lines.html?zone=${encodeURIComponent(z.zone_name)}" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:${over?'var(--red)':'var(--amber)'};color:#fff;font-weight:600;font-size:12px;text-decoration:none;margin:2px 4px 2px 0">
-      ${z.zone_name} · ${(+z.pct_complete).toFixed(0)}%
-    </a>`;
-  }).join('');
+  // Split into "approaching" (close but under 100%) vs "over" (already past target).
+  // Show over first since it's more urgent.
+  const overZones        = flagged.filter(z => z.pct_complete >= 100).sort((a,b) => b.pct_complete - a.pct_complete);
+  const approachingZones = flagged.filter(z => z.pct_complete <  100).sort((a,b) => b.pct_complete - a.pct_complete);
+  const chip = (z, isOver) => `<a href="lines.html?zone=${encodeURIComponent(z.zone_name)}" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:${isOver?'var(--red)':'var(--amber)'};color:#fff;font-weight:600;font-size:12px;text-decoration:none;margin:2px 4px 2px 0">${z.zone_name} · ${(+z.pct_complete).toFixed(0)}%</a>`;
+  const items = overZones.map(z => chip(z, true)).concat(approachingZones.map(z => chip(z, false))).join('');
+
+  // Title describes whichever cases are present; over-target leads if both.
+  let title;
+  if (overZones.length && approachingZones.length) {
+    title = `${overZones.length} over target, ${approachingZones.length} approaching`;
+  } else if (overZones.length) {
+    title = `${overZones.length} ${overZones.length===1?'zone is':'zones are'} over target`;
+  } else {
+    title = `${approachingZones.length} ${approachingZones.length===1?'zone is':'zones are'} within ${alertWithinPct}% of target`;
+  }
+
+  // Severity: red if any zone is over target, amber if just approaching.
+  const severe = overZones.length > 0;
+  const tint   = severe ? 'var(--red)'    : 'var(--amber)';
+  const bg     = severe ? 'var(--red-bg)' : 'var(--amber-bg)';
+  const border = severe ? '#fca5a5'        : '#fcd34d';
+
   banner.innerHTML = `
-    <div style="margin-bottom:14px;padding:10px 14px;background:var(--amber-bg);border:1px solid #fcd34d;border-left:3px solid var(--amber);border-radius:var(--r-lg);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <svg class="icon-lg" viewBox="0 0 24 24" stroke-width="1.5" stroke="var(--amber)" fill="none" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
-      <strong style="color:var(--ink)">${flagged.length} ${flagged.length===1?'zone is':'zones are'} within ${alertWithinPct}% of target</strong>
+    <div style="margin-bottom:14px;padding:10px 14px;background:${bg};border:1px solid ${border};border-left:3px solid ${tint};border-radius:var(--r-lg);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <svg class="icon-lg" viewBox="0 0 24 24" stroke-width="1.5" stroke="${tint}" fill="none" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+      <strong style="color:var(--ink)">${title}</strong>
       <div style="flex:1;min-width:200px">${items}</div>
       <span class="text-muted text-xs">threshold set in Admin</span>
     </div>`;
