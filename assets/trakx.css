@@ -2,15 +2,22 @@
    Palette mirrors NGL brand (navy + gold + cool greys). */
 
 :root {
+  /* Aligned with the NGL family — qa-trial + Project Tracker share the
+     same palette. IMR uses a Power BI variant (#1B2D71 + sky) which is
+     intentionally different. */
   --navy:#1e3a5f; --navy-h:#16304f;
   --blue:#1e56a0; --blue-h:#174a8a;
+  --accent:#1e56a0;            /* alias for --blue, matches Project Tracker */
   --gold:#c8a96a; --gold-d:#a48a52;
   --green:#059669; --green-bg:#d1fae5;
   --red:#dc2626;   --red-bg:#fee2e2;
   --amber:#d97706; --amber-bg:#fef3c7;
   --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
   --gray-300:#d1d5db; --gray-500:#6b7280; --gray-600:#4b5563;
-  --gray-700:#374151; --gray-900:#111827;
+  --gray-700:#374151; --gray-900:#1f2937;        /* matches --ink in family */
+  --ink:#1f2937;               /* alias used by family */
+  --muted:#6b7280;             /* alias used by family */
+  --line:#e2e8f0;              /* alias used by family */
   --bg:#eef2f7; --border:#e2e8f0;
   --shadow-sm:0 1px 2px rgba(15,23,42,.05);
   --shadow:0 1px 3px rgba(15,23,42,.08);
@@ -38,13 +45,14 @@ h2 { font-size: 16px; font-weight: 600; color: var(--gray-900); }
 
 /* ── Header / brand ──────────────────────────────────────────────── */
 .trakx-header {
-  background: var(--navy);
+  background: linear-gradient(180deg, #22436c 0%, #1a3252 100%);
   color: white;
   padding: 12px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  border-bottom: 3px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
   position: sticky; top: 0; z-index: 50;
 }
 .trakx-brand {
@@ -95,16 +103,20 @@ h2 { font-size: 16px; font-weight: 600; color: var(--gray-900); }
 }
 .card-tight { padding: 12px 14px; }
 .card-header {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--gray-900);
-  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
-.card-header .sub { font-size: 12px; color: var(--gray-500); font-weight: 400; }
+.card-header .sub { font-size: 12px; color: var(--gray-500); font-weight: 400; text-transform: none; letter-spacing: 0; }
 
 /* ── Buttons ─────────────────────────────────────────────────────── */
 .btn {
@@ -246,8 +258,8 @@ h2 { font-size: 16px; font-weight: 600; color: var(--gray-900); }
 .kpi-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--gray-500);
+  letter-spacing: 0.08em;
+  color: var(--navy);
   font-weight: 700;
 }
 .kpi-value {
