@@ -5,26 +5,371 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TrakX — Admin</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  input.num, input.text, select.field {
+    @apply border rounded px-2 py-1 text-sm;
+  }
+  .card { @apply bg-white rounded-lg shadow-sm p-5 mb-4; }
+  .btn  { @apply px-3 py-1.5 rounded text-sm font-medium; }
+  .btn-blue { @apply bg-blue-600 text-white hover:bg-blue-700; }
+  .btn-gray { @apply bg-gray-100 text-gray-700 hover:bg-gray-200; }
+  .btn-red  { @apply bg-red-50 text-red-700 hover:bg-red-100; }
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.04</div>
+<div class="version-badge fixed top-2 right-2 text-xs text-gray-400">V0.05</div>
 
-<div class="max-w-6xl mx-auto px-6 py-8">
+<div class="max-w-6xl mx-auto px-4 py-6">
   <a href="index.html" class="text-sm text-blue-700 hover:underline">← Back</a>
-  <h1 class="text-3xl font-bold text-gray-900 mt-2">TrakX Admin</h1>
-  <p class="text-gray-500 mb-8">Manage projects, zones, people, rates. Login required (auth handled by Richard).</p>
+  <h1 class="text-2xl font-bold mt-2">TrakX Admin — Fonterra Maungaturoto 26</h1>
+  <p class="text-gray-500 mb-6">Edit rates, zones, people. Login (Richard's auth) will gate this later.</p>
 
-  <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
-    <h2 class="font-semibold text-amber-900 mb-2">Coming soon</h2>
-    <ul class="text-sm text-amber-900 space-y-1 list-disc list-inside">
-      <li>Add/edit projects, zones, PO targets</li>
-      <li>Add/edit companies + people, mark internal</li>
-      <li>Set per-person pay rates (day/night, time-scoped)</li>
-      <li>Set per-project sell rates (day/night, travel, accom, materials markup, bonus %)</li>
-      <li>Set break rules (lunch / rest break)</li>
-    </ul>
-    <p class="text-sm text-amber-900 mt-3">For now, data was seeded via SQL. To edit, use the Supabase dashboard.</p>
-  </div>
+  <!-- Project Rates -->
+  <section class="card">
+    <h2 class="text-lg font-semibold mb-3">Project rates</h2>
+    <form id="rates-form" class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+      <label>Day sell rate $/h
+        <input id="day_sell" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Night sell rate $/h
+        <input id="night_sell" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Bonus %
+        <input id="bonus_pct" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Travel cost $/km
+        <input id="travel_cost" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Travel sell $/km
+        <input id="travel_sell" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Materials markup %
+        <input id="mat_markup" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Accom cost $/night
+        <input id="accom_cost" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Accom sell $/night
+        <input id="accom_sell" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Equipment markup %
+        <input id="eq_markup" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Day starts at hour (0-23)
+        <input id="day_start" type="number" min="0" max="23" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Day ends at hour (0-23)
+        <input id="day_end" type="number" min="0" max="23" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Lunch break (min, unpaid)
+        <input id="lunch_min" type="number" min="0" class="border rounded px-2 py-1 w-full">
+      </label>
+      <label>Lunch threshold (hours)
+        <input id="lunch_thresh" type="number" step="0.25" class="border rounded px-2 py-1 w-full">
+      </label>
+
+      <div class="md:col-span-3 flex items-center gap-3 pt-2">
+        <button type="submit" class="btn btn-blue">Save rates</button>
+        <span id="rates-msg" class="text-sm"></span>
+      </div>
+    </form>
+    <p class="mt-3 text-xs text-gray-500">
+      Reminder per NZ Employment Law: workers &gt; 4h get 1 paid 10min rest break, &gt; 6h get 2 paid 10min rests plus 1 unpaid 30min meal break. Defaults above reflect that.
+    </p>
+  </section>
+
+  <!-- Zones -->
+  <section class="card">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="text-lg font-semibold">Zones</h2>
+      <button id="add-zone" class="btn btn-blue">+ Add zone</button>
+    </div>
+    <div id="zones-rows" class="space-y-2 text-sm"></div>
+  </section>
+
+  <!-- People -->
+  <section class="card">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="text-lg font-semibold">People + rates</h2>
+      <button id="add-person" class="btn btn-blue">+ Add person</button>
+    </div>
+    <div id="people-rows" class="space-y-2 text-sm"></div>
+  </section>
+
+  <!-- Companies -->
+  <section class="card">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="text-lg font-semibold">Companies</h2>
+      <button id="add-company" class="btn btn-blue">+ Add company</button>
+    </div>
+    <div id="companies-rows" class="space-y-2 text-sm"></div>
+  </section>
 </div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
+const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
+const c2d = c => (c / 100).toFixed(2);
+const d2c = d => Math.round(parseFloat(d) * 100);
+
+let projectId = null;
+let companies = [];
+let people = [];
+let zones = [];
+
+async function callAdmin(body) {
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'failed');
+  return j;
+}
+
+async function loadAll() {
+  // Project
+  const { data: project } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').single();
+  projectId = project.id;
+
+  // Rates
+  const { data: pr } = await sb.from('trakx_project_rates').select('*').eq('project_id', projectId).single();
+  if (pr) {
+    document.getElementById('day_sell').value     = c2d(pr.day_sell_rate_cents);
+    document.getElementById('night_sell').value   = c2d(pr.night_sell_rate_cents);
+    document.getElementById('bonus_pct').value    = pr.bonus_pct;
+    document.getElementById('travel_cost').value  = c2d(pr.travel_cost_per_km_cents);
+    document.getElementById('travel_sell').value  = c2d(pr.travel_sell_per_km_cents);
+    document.getElementById('mat_markup').value   = pr.materials_markup_pct;
+    document.getElementById('accom_cost').value   = c2d(pr.accom_cost_per_night_cents);
+    document.getElementById('accom_sell').value   = c2d(pr.accom_sell_per_night_cents);
+    document.getElementById('eq_markup').value    = pr.equipment_markup_pct;
+    document.getElementById('day_start').value    = pr.day_start_hour;
+    document.getElementById('day_end').value      = pr.day_end_hour;
+    document.getElementById('lunch_min').value    = pr.lunch_break_minutes;
+    document.getElementById('lunch_thresh').value = pr.lunch_break_threshold_hours;
+  }
+
+  // Zones
+  const { data: zoneData } = await sb.from('trakx_zones').select('*').eq('project_id', projectId).order('display_order');
+  zones = zoneData || [];
+  renderZones();
+
+  // Companies
+  const { data: companyData } = await sb.from('trakx_companies').select('*').order('name');
+  companies = companyData || [];
+  renderCompanies();
+
+  // People + their current rates + which project they're on
+  const { data: peopleData } = await sb.from('trakx_people').select('*').order('name');
+  people = peopleData || [];
+  // Latest rate per person
+  const { data: rates } = await sb.from('trakx_person_rates').select('person_id, day_pay_rate_cents, night_pay_rate_cents, effective_from')
+    .order('effective_from', { ascending: false });
+  const latest = {};
+  for (const r of (rates || [])) if (!latest[r.person_id]) latest[r.person_id] = r;
+  // Assignments
+  const { data: assigns } = await sb.from('trakx_project_people').select('person_id').eq('project_id', projectId);
+  const assignedIds = new Set((assigns || []).map(a => a.person_id));
+  for (const p of people) {
+    p.latest_rate = latest[p.id];
+    p.assigned = assignedIds.has(p.id);
+  }
+  renderPeople();
+}
+
+// ── Rates form ─────────────────────────────────────────────────────
+document.getElementById('rates-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('rates-msg');
+  msg.textContent = 'Saving…'; msg.className = 'text-sm text-gray-500';
+  try {
+    await callAdmin({
+      op: 'update_project_rates',
+      project_id: projectId,
+      day_sell_rate_cents:        d2c(document.getElementById('day_sell').value),
+      night_sell_rate_cents:      d2c(document.getElementById('night_sell').value),
+      bonus_pct:                  parseFloat(document.getElementById('bonus_pct').value),
+      travel_cost_per_km_cents:   d2c(document.getElementById('travel_cost').value),
+      travel_sell_per_km_cents:   d2c(document.getElementById('travel_sell').value),
+      materials_markup_pct:       parseFloat(document.getElementById('mat_markup').value),
+      accom_cost_per_night_cents: d2c(document.getElementById('accom_cost').value),
+      accom_sell_per_night_cents: d2c(document.getElementById('accom_sell').value),
+      equipment_markup_pct:       parseFloat(document.getElementById('eq_markup').value),
+      day_start_hour:             parseInt(document.getElementById('day_start').value, 10),
+      day_end_hour:               parseInt(document.getElementById('day_end').value, 10),
+      lunch_break_minutes:        parseInt(document.getElementById('lunch_min').value, 10),
+      lunch_break_threshold_hours:parseFloat(document.getElementById('lunch_thresh').value),
+    });
+    msg.textContent = '✓ Saved'; msg.className = 'text-sm text-green-700';
+  } catch (e) {
+    msg.textContent = '⚠ ' + e.message; msg.className = 'text-sm text-red-700';
+  }
+});
+
+// ── Zones ──────────────────────────────────────────────────────────
+function renderZones() {
+  document.getElementById('zones-rows').innerHTML = zones.map((z, i) => `
+    <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded" data-id="${z.id}">
+      <input class="border rounded px-2 py-1 col-span-3" placeholder="Name"        value="${z.name||''}"               data-f="name">
+      <input class="border rounded px-2 py-1 col-span-2" placeholder="NS proj"     value="${z.netsuite_project_id||''}" data-f="netsuite_project_id">
+      <input class="border rounded px-2 py-1 col-span-2" placeholder="PO #"        value="${z.po_number||''}"          data-f="po_number">
+      <input class="border rounded px-2 py-1 col-span-2" placeholder="Target $"    type="number" step="1"
+             value="${z.revenue_target_cents ? c2d(z.revenue_target_cents) : ''}"   data-f="revenue_target">
+      <input class="border rounded px-2 py-1 col-span-1" placeholder="#" type="number"
+             value="${z.display_order ?? 0}"                                          data-f="display_order">
+      <button class="btn btn-blue col-span-1" data-act="save">Save</button>
+      <button class="btn btn-red  col-span-1" data-act="del">Del</button>
+    </div>
+  `).join('');
+  document.querySelectorAll('#zones-rows [data-act]').forEach(b => b.addEventListener('click', zoneAction));
+}
+async function zoneAction(e) {
+  const row = e.target.closest('[data-id]');
+  const id  = row.dataset.id;
+  const get = f => row.querySelector(`[data-f="${f}"]`).value;
+  try {
+    if (e.target.dataset.act === 'del') {
+      if (!confirm('Delete this zone? (Cannot delete if entries are linked.)')) return;
+      await callAdmin({ op: 'delete_zone', zone_id: id });
+    } else {
+      await callAdmin({
+        op: 'upsert_zone',
+        zone_id: id.startsWith('new-') ? null : id,
+        project_id: projectId,
+        name: get('name'),
+        netsuite_project_id: get('netsuite_project_id'),
+        po_number: get('po_number'),
+        revenue_target_cents: d2c(get('revenue_target') || '0'),
+        display_order: parseInt(get('display_order') || '0', 10),
+      });
+    }
+    await loadAll();
+  } catch (err) { alert(err.message); }
+}
+document.getElementById('add-zone').addEventListener('click', () => {
+  zones.push({ id: 'new-' + Date.now(), name: '', display_order: zones.length });
+  renderZones();
+});
+
+// ── Companies ──────────────────────────────────────────────────────
+function renderCompanies() {
+  document.getElementById('companies-rows').innerHTML = companies.map(c => `
+    <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded" data-id="${c.id}">
+      <input class="border rounded px-2 py-1 col-span-6" value="${c.name}" data-f="name">
+      <label class="col-span-3 flex items-center text-sm">
+        <input type="checkbox" class="mr-2" ${c.is_internal ? 'checked' : ''} data-f="is_internal">
+        Internal (NGL)
+      </label>
+      <button class="btn btn-blue col-span-1" data-act="save">Save</button>
+      <div class="col-span-2"></div>
+    </div>
+  `).join('');
+  document.querySelectorAll('#companies-rows [data-act="save"]').forEach(b => b.addEventListener('click', companySave));
+}
+async function companySave(e) {
+  const row = e.target.closest('[data-id]');
+  const id  = row.dataset.id;
+  try {
+    await callAdmin({
+      op: 'upsert_company',
+      company_id: id.startsWith('new-') ? null : id,
+      name: row.querySelector('[data-f="name"]').value,
+      is_internal: row.querySelector('[data-f="is_internal"]').checked,
+    });
+    await loadAll();
+  } catch (err) { alert(err.message); }
+}
+document.getElementById('add-company').addEventListener('click', () => {
+  companies.push({ id: 'new-' + Date.now(), name: '', is_internal: false });
+  renderCompanies();
+});
+
+// ── People ─────────────────────────────────────────────────────────
+function renderPeople() {
+  const companyOptions = companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('people-rows').innerHTML = `
+    <div class="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 pb-1 border-b">
+      <div class="col-span-3">Name</div>
+      <div class="col-span-2">Company</div>
+      <div class="col-span-2">Day $/h</div>
+      <div class="col-span-2">Night $/h</div>
+      <div class="col-span-1 text-center">On project</div>
+      <div class="col-span-2"></div>
+    </div>` + people.map(p => `
+    <div class="grid grid-cols-12 gap-2 items-center p-1.5" data-id="${p.id}">
+      <input class="border rounded px-2 py-1 col-span-3" value="${p.name||''}" data-f="name">
+      <select class="border rounded px-2 py-1 col-span-2" data-f="company_id">
+        ${companyOptions.replace(`value="${p.company_id}"`, `value="${p.company_id}" selected`)}
+      </select>
+      <input class="border rounded px-2 py-1 col-span-2" type="number" step="0.01"
+             value="${p.latest_rate ? c2d(p.latest_rate.day_pay_rate_cents) : ''}" data-f="day_pay">
+      <input class="border rounded px-2 py-1 col-span-2" type="number" step="0.01"
+             value="${p.latest_rate ? c2d(p.latest_rate.night_pay_rate_cents) : ''}" data-f="night_pay">
+      <label class="col-span-1 text-center">
+        <input type="checkbox" ${p.assigned ? 'checked' : ''} data-f="assigned">
+      </label>
+      <button class="btn btn-blue col-span-1" data-act="save">Save</button>
+      <button class="btn btn-gray col-span-1" data-act="rate" title="Save just a new rate (today)">+Rate</button>
+    </div>
+  `).join('');
+  document.querySelectorAll('#people-rows [data-act]').forEach(b => b.addEventListener('click', personAction));
+}
+async function personAction(e) {
+  const row = e.target.closest('[data-id]');
+  const id  = row.dataset.id;
+  const get = f => row.querySelector(`[data-f="${f}"]`);
+  try {
+    if (e.target.dataset.act === 'rate') {
+      // Just push a new rate effective today
+      await callAdmin({
+        op: 'set_person_rate',
+        person_id: id,
+        effective_from: new Date().toISOString().slice(0,10),
+        day_pay_rate_cents:   d2c(get('day_pay').value),
+        night_pay_rate_cents: d2c(get('night_pay').value),
+      });
+    } else {
+      // Save name/company, set rate if changed, sync project assignment
+      const personRes = await callAdmin({
+        op: 'upsert_person',
+        person_id: id.startsWith('new-') ? null : id,
+        name: get('name').value,
+        company_id: get('company_id').value,
+      });
+      const pid = personRes.id;
+      const dayPay = d2c(get('day_pay').value);
+      const nightPay = d2c(get('night_pay').value);
+      const p = people.find(x => x.id === id);
+      if (!p?.latest_rate
+          || p.latest_rate.day_pay_rate_cents !== dayPay
+          || p.latest_rate.night_pay_rate_cents !== nightPay) {
+        await callAdmin({
+          op: 'set_person_rate',
+          person_id: pid,
+          effective_from: new Date().toISOString().slice(0,10),
+          day_pay_rate_cents: dayPay,
+          night_pay_rate_cents: nightPay,
+        });
+      }
+      await callAdmin({
+        op: 'assign_person',
+        project_id: projectId,
+        person_id: pid,
+        assigned: get('assigned').checked,
+      });
+    }
+    await loadAll();
+  } catch (err) { alert(err.message); }
+}
+document.getElementById('add-person').addEventListener('click', () => {
+  people.push({ id: 'new-' + Date.now(), name: '', company_id: companies[0]?.id, assigned: true });
+  renderPeople();
+});
+
+loadAll();
+</script>
 </body>
 </html>
