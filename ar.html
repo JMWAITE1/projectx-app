@@ -14,15 +14,16 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body data-page="ar" data-version="V0.15">
+<body data-page="ar" data-version="V0.20">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
-  <a href="index.html" class="btn btn-ghost btn-sm" style="padding-left:0;margin-bottom:8px">← Back to dashboard</a>
-
-    <div class="flex items-baseline justify-between mb-2 gap-3">
+  <div class="flex items-baseline justify-between mb-2 gap-3">
     <h1>Accounts Receivable</h1>
-    <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+    <div class="flex items-center gap-2" style="flex-shrink:0">
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+      <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+    </div>
   </div>
   <p class="text-muted text-sm mb-4">What to invoice the customer. Approved entries only.</p>
 

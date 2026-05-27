@@ -67,15 +67,16 @@
   .row-add-btn:hover { background: var(--gray-200); color: var(--navy); }
 </style>
 </head>
-<body data-page="admin" data-version="V0.15">
+<body data-page="admin" data-version="V0.20">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
-  <a href="index.html" class="btn btn-ghost btn-sm" style="padding-left:0;margin-bottom:8px">← Back to dashboard</a>
-
-    <div class="flex items-baseline justify-between mb-3">
+  <div class="flex items-baseline justify-between mb-3 gap-3">
     <h1>Admin</h1>
-    <span class="text-muted text-xs">Auth (Richard) will gate this later.</span>
+    <div class="flex items-center gap-3" style="flex-shrink:0">
+      <span class="text-muted text-xs hide-mobile">Auth (Richard) will gate this later.</span>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
   </div>
 
   <div class="admin-grid">

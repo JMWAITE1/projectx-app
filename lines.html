@@ -85,18 +85,19 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V0.19">
+<body data-page="lines" data-version="V0.20">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
-  <a href="index.html" class="btn btn-ghost btn-sm" style="padding-left:0">← Back to dashboard</a>
-
-  <div class="flex items-baseline justify-between mb-3 gap-3" style="margin-top:8px">
+  <div class="flex items-baseline justify-between mb-3 gap-3">
     <div>
       <h1>Project lines</h1>
       <div class="text-muted text-xs mt-1">Click any row to inspect the full calculation.</div>
     </div>
-    <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+    <div class="flex items-center gap-2" style="flex-shrink:0">
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+      <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
+    </div>
   </div>
 
   <div class="card card-tight mb-3 filters">
