@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX — Admin</title>
+<title>TrakX â€” Admin</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -75,7 +75,7 @@
   .row-add-btn:hover { background: var(--gray-200); color: var(--navy); }
 </style>
 </head>
-<body data-page="admin" data-version="V0.41">
+<body data-page="admin" data-version="V0.42">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -83,7 +83,7 @@
     <h1>Admin</h1>
     <div class="flex items-center gap-3" style="flex-shrink:0">
       <span class="text-muted text-xs hide-mobile">Auth (Richard) will gate this later.</span>
-      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+      <a href="index.html" class="btn btn-ghost btn-sm">â† Back</a>
     </div>
   </div>
 
@@ -105,7 +105,7 @@
         <div class="field-cell"><div class="field-cell-label" title="What we pay">Cost</div>     <input id="accom_cost" type="number" step="0.01" class="field num"></div>
         <div class="field-cell"><div class="field-cell-label" title="What we charge">Sell</div>  <input id="accom_sell" type="number" step="0.01" class="field num"></div>
 
-        <div class="rates-section-label" title="Sell = cost × (1 + markup)">Markup %</div>
+        <div class="rates-section-label" title="Sell = cost Ã— (1 + markup)">Markup %</div>
         <div class="field-cell"><div class="field-cell-label">Materials</div>  <input id="mat_markup" type="number" step="0.01" class="field num"></div>
         <div class="field-cell"><div class="field-cell-label">Equipment</div>  <input id="eq_markup" type="number" step="0.01" class="field num"></div>
 
@@ -182,11 +182,11 @@ async function callAdmin(body) {
 function showError(target, label, err) {
   console.error(`[admin] ${label}`, err);
   const el = document.getElementById(target);
-  if (el) el.innerHTML = `<div class="empty" style="color:var(--red);background:var(--red-bg);padding:8px;border-radius:6px;font-size:12px;text-align:left">⚠ ${label}: ${err?.message || JSON.stringify(err)}</div>`;
+  if (el) el.innerHTML = `<div class="empty" style="color:var(--red);background:var(--red-bg);padding:8px;border-radius:6px;font-size:12px;text-align:left">âš  ${label}: ${err?.message || JSON.stringify(err)}</div>`;
 }
 
 async function loadAll() {
-  // Array+first instead of .single() — .single() is too strict and throws
+  // Array+first instead of .single() â€” .single() is too strict and throws
   // "Cannot coerce to single JSON object" on transient hiccups.
   const { data: projects, error: projErr } = await sb.from('trakx_projects').select('id,display_name,status').eq('slug','fonterra-m26').limit(1);
   if (projErr || !projects || !projects.length) {
@@ -200,7 +200,7 @@ async function loadAll() {
 
   const { data: prArr, error: prErr } = await sb.from('trakx_project_rates').select('*').eq('project_id', projectId).limit(1);
   if (prErr) {
-    document.getElementById('rates-msg').textContent = '⚠ rates load: ' + prErr.message;
+    document.getElementById('rates-msg').textContent = 'âš  rates load: ' + prErr.message;
     document.getElementById('rates-msg').className = 'text-xs text-red';
   }
   const pr = prArr && prArr[0];
@@ -249,7 +249,7 @@ async function loadAll() {
 document.getElementById('rates-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = document.getElementById('rates-msg');
-  msg.textContent = 'Saving…'; msg.className = 'text-xs text-muted';
+  msg.textContent = 'Savingâ€¦'; msg.className = 'text-xs text-muted';
   try {
     await callAdmin({
       op: 'update_project_rates', project_id: projectId,
@@ -268,9 +268,9 @@ document.getElementById('rates-form').addEventListener('submit', async (e) => {
       lunch_break_threshold_hours:parseFloat(document.getElementById('lunch_thresh').value),
       zone_alert_within_pct:      parseFloat(document.getElementById('zone_alert').value),
     });
-    msg.textContent = '✓ Saved'; msg.className = 'text-xs text-green';
+    msg.textContent = 'âœ“ Saved'; msg.className = 'text-xs text-green';
   } catch (e) {
-    msg.textContent = '⚠ ' + e.message; msg.className = 'text-xs text-red';
+    msg.textContent = 'âš  ' + e.message; msg.className = 'text-xs text-red';
   }
 });
 
@@ -290,7 +290,7 @@ function renderZones() {
             <td><input class="field" value="${z.po_number||''}" data-f="po_number" style="width:80px"></td>
             <td><input class="field num" type="number" step="1" value="${z.revenue_target_cents ? c2d(z.revenue_target_cents) : ''}" data-f="revenue_target" style="width:90px"></td>
             <td><button class="btn btn-primary" data-act="save">Save</button></td>
-            <td><button class="btn btn-danger" data-act="del">×</button></td>
+            <td><button class="btn btn-danger" data-act="del">Ã—</button></td>
           </tr>
         `).join('')}
       </tbody>

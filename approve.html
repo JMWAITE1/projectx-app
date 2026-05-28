@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX — Approve</title>
+<title>TrakX â€” Approve</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,13 +14,13 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/trakx.css">
 </head>
-<body data-page="approve" data-version="V0.41">
+<body data-page="approve" data-version="V0.42">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
   <div class="flex items-baseline justify-between mb-2 gap-3">
     <h1>Pending approvals</h1>
-    <a href="index.html" class="btn btn-ghost btn-sm" style="flex-shrink:0">← Back</a>
+    <a href="index.html" class="btn btn-ghost btn-sm" style="flex-shrink:0">â† Back</a>
   </div>
   <p class="text-muted text-sm mb-4">PM ticks rows below. Auth handled by Richard.</p>
 
@@ -57,7 +57,7 @@ const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 let allRows = [];
 
 async function load() {
-  $list.innerHTML = '<div class="loading">Loading…</div>';
+  $list.innerHTML = '<div class="loading">Loadingâ€¦</div>';
   const { data, error } = await sb
     .from('v_trakx_line_totals')
     .select('id, type, date, person_name, company_name, zone_name, start_time, finish_time, total_hours, work_description, comments, materials_description, po_number, total_cost_cents, sell_price_cents')
@@ -96,7 +96,7 @@ function render() {
   if (!rows.length) {
     $list.innerHTML = allRows.length
       ? '<div class="empty">No entries match the current filters.</div>'
-      : '<div class="empty"><svg class="icon-xl" viewBox="0 0 24 24" stroke-width="1.5" stroke="var(--green)" fill="none" style="margin:0 auto 8px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>All caught up — no pending entries.</div>';
+      : '<div class="empty"><svg class="icon-xl" viewBox="0 0 24 24" stroke-width="1.5" stroke="var(--green)" fill="none" style="margin:0 auto 8px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>All caught up â€” no pending entries.</div>';
     $count.textContent = allRows.length ? `0 of ${allRows.length}` : '0 pending';
     return;
   }
@@ -113,7 +113,7 @@ function render() {
       <div class="divide-y">
         ${rows.map(r => {
           const detail = r.type === 'hours'
-            ? `${r.start_time?.slice(0,5)}–${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)`
+            ? `${r.start_time?.slice(0,5)}â€“${r.finish_time?.slice(0,5)} (${(+r.total_hours).toFixed(2)}h)`
             : r.type === 'materials'
               ? (r.po_number ? `PO ${r.po_number}` : '')
               : '';
@@ -125,10 +125,10 @@ function render() {
               <div class="flex items-baseline gap-2" style="flex-wrap:wrap">
                 <span class="font-semibold">${r.person_name}</span>
                 ${typeBadge}
-                <span class="text-muted text-xs">${r.company_name} • ${r.zone_name}${detail ? ' • ' + detail : ''}</span>
+                <span class="text-muted text-xs">${r.company_name} â€¢ ${r.zone_name}${detail ? ' â€¢ ' + detail : ''}</span>
               </div>
               ${desc ? `<div class="text-sm text-gray-700 mt-1">"${desc.replace(/"/g,'&quot;')}"</div>` : ''}
-              ${r.comments ? `<div class="text-xs text-amber mt-1">⚠ ${r.comments.replace(/"/g,'&quot;')}</div>` : ''}
+              ${r.comments ? `<div class="text-xs text-amber mt-1">âš  ${r.comments.replace(/"/g,'&quot;')}</div>` : ''}
             </div>
             <div class="text-right" style="min-width:90px">
               <div class="text-xs text-muted">cost ${fmt(r.total_cost_cents)}</div>

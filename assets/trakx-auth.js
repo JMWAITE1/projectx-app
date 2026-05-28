@@ -8,6 +8,17 @@
   const APP_CODE    = 'trakx';
   const SESSION_KEY = 'ngl-am-auth';
 
+  // Hide body immediately so page content never flashes before auth completes.
+  var bodyHide = document.createElement('style');
+  bodyHide.id = 'trakx-body-hide';
+  bodyHide.textContent = 'body{display:none!important}';
+  document.head.appendChild(bodyHide);
+
+  function showBody() {
+    var s = document.getElementById('trakx-body-hide');
+    if (s) s.remove();
+  }
+
   let __resolveReady;
   window.__trakxReady = new Promise(function (r) { __resolveReady = r; });
 
@@ -29,6 +40,7 @@
   var stored = loadSession();
   if (stored && stored.access_token && stored.expires_at > Math.floor(Date.now() / 1000) + 60) {
     window.__trakxJwt = stored.access_token;
+    document.addEventListener('DOMContentLoaded', showBody);
     __resolveReady();
     return; // already authenticated — skip overlay setup
   }
@@ -161,6 +173,7 @@
         btn.disabled = false; btn.textContent = 'Verify & Continue →'; return;
       }
       overlay.classList.remove('open');
+      showBody();
       __resolveReady();
     } catch (e) {
       trakxLoginErr('Network error: ' + e.message);
