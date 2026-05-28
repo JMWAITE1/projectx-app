@@ -73,8 +73,10 @@
   }
   .chart-wrap { position: relative; flex: 1; min-height: 0; }
 
-  /* Side column matches the KPI strip: cards distribute evenly so the
-     column bottom-aligns with the charts. */
+  /* Side column: cards sit at their natural content height (no forced
+     equal split). Stopping the equal-split squeeze that was clipping the
+     Chart Series legend's 5th item. Empty space lands at the bottom of
+     the column if the side stack is shorter than the chart row. */
   .side-col { display: flex; flex-direction: column; gap: 8px; }
   .side-card {
     background: white;
@@ -82,10 +84,7 @@
     border-radius: var(--r);
     padding: 8px 12px;
     box-shadow: var(--shadow-sm);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+    flex: 0 0 auto;
   }
   .side-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
   .ns-row { font-size: 11px; color: var(--muted); padding: 2px 0; display: block; }
@@ -106,7 +105,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V1.00">
+<body data-page="dashboard" data-version="V1.01">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -315,6 +314,13 @@ if (!zones?.length) {
   }).join('');
 }
 
+// Shared Y-axis ceiling so the two charts line up visually â€” a $50k bar
+// in the Zone Summary should sit at the same pixel height as a $50k slice
+// of the Total Summary. Right chart sums always dominate, so use those.
+const yMaxRaw = Math.max(totalCost, totalGp, totalTarget, totalRevenue) / 100;
+// Round up to nearest $10k for tidy gridlines.
+const yMax = Math.max(10000, Math.ceil(yMaxRaw / 10000) * 10000);
+
 // Shared chart options â€” built-in legend disabled (we render our own in the sidebar)
 // categoryPercentage + barPercentage keep bar widths consistent regardless of
 // how many categories the chart has (so 1 zone or 6 zones look the same shape).
@@ -336,6 +342,7 @@ const baseOpts = {
   scales: {
     y: {
       beginAtZero: true,
+      max: yMax,
       grid: { color: '#eef1f5' },
       ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'k' : '$' + v },
     },
