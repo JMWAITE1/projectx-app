@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="submit" data-version="V1.02">
+<body data-page="submit" data-version="V1.03">
 <script src="assets/nav.js" defer></script>
 
 <main class="container-narrow">
@@ -169,17 +169,41 @@ async function load() {
     `<option value="">— pick zone —</option>` +
     (zones || []).map(z => `<option value="${z.id}">${z.name}</option>`).join('');
 
-  const { data: links } = await sb
+  // Fetch people for the dropdown via plain queries (no embedded relations).
+  // Embedded-relation joins relied on PostgREST's auto-detected FK relationships,
+  // which were brittle after the trakx→projectx table renames. Plain queries
+  // are slower but never silently return empty.
+  const { data: links, error: linkErr } = await sb
     .from('projectx_project_people')
-    .select('person_id, projectx_people(id, name, projectx_companies(name))')
+    .select('person_id')
     .eq('project_id', project.id);
-  const people = (links || [])
-    .map(l => l.projectx_people)
-    .filter(Boolean)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  document.getElementById('person').innerHTML =
-    `<option value="">— pick name —</option>` +
-    people.map(p => `<option value="${p.id}">${p.name} (${p.projectx_companies?.name || ''})</option>`).join('');
+  if (linkErr) console.error('project_people fetch failed', linkErr);
+  const personIds = (links || []).map(l => l.person_id);
+
+  let people = [];
+  if (personIds.length) {
+    const { data: rawPeople } = await sb
+      .from('projectx_people')
+      .select('id, name, company_id, active')
+      .in('id', personIds)
+      .eq('active', true);
+    const { data: companies } = await sb
+      .from('projectx_companies')
+      .select('id, name');
+    const companyById = Object.fromEntries((companies || []).map(c => [c.id, c.name]));
+    people = (rawPeople || [])
+      .map(p => ({ id: p.id, name: p.name, company: companyById[p.company_id] || '' }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const $person = document.getElementById('person');
+  if (!people.length) {
+    $person.innerHTML = '<option value="">— no people assigned to this project —</option>';
+  } else {
+    $person.innerHTML =
+      '<option value="">— pick name —</option>' +
+      people.map(p => `<option value="${p.id}">${p.name} (${p.company})</option>`).join('');
+  }
 }
 
 document.getElementById('projectx-form').addEventListener('submit', async (e) => {
