@@ -8,7 +8,7 @@
 (function () {
   const links = [
     { id: 'dashboard', label: 'Dashboard',  href: 'index.html'   },
-    { id: 'lines',     label: 'Entries',    href: 'lines.html'   },
+    { id: 'lines',     label: 'Log',        href: 'lines.html'   },
     { id: 'approve',   label: 'Approve',    href: 'approve.html' },
     { id: 'ap',        label: 'AP',         href: 'ap.html'      },
     { id: 'ar',        label: 'AR',         href: 'ar.html'      },
