@@ -1,6 +1,6 @@
-# TrakX
+# ProjectX
 
-Project costing system for NGL site-maintenance jobs. Rebuilds the Smartsheet TrakX workspace as a Supabase + static HTML web app, matching the IMR / PPR / TCDC stack.
+Project costing system for NGL site-maintenance jobs. Rebuilds the Smartsheet ProjectX workspace as a Supabase + static HTML web app, matching the IMR / PPR / TCDC stack.
 
 **Status:** v1 — Fonterra Maungaturoto '26 only. Other projects (Chorus, BNZ, MOE) stay in Smartsheet for now.
 
@@ -16,20 +16,20 @@ Project costing system for NGL site-maintenance jobs. Rebuilds the Smartsheet Tr
 
 - Supabase Postgres backend — see `supabase/migrations/`
 - Static HTML frontend (deploy TBD)
-- **Auth handled by Richard** for PM/office/admin pages — TrakX doesn't ship its own login flow. Subbies don't log in (smartform is anonymous, validated server-side by `trakx-submit` edge function).
-- Every calculation lives in **one readable SQL view** (`v_trakx_lines`). No hidden formulas.
+- **Auth handled by Richard** for PM/office/admin pages — ProjectX doesn't ship its own login flow. Subbies don't log in (smartform is anonymous, validated server-side by `projectx-submit` edge function).
+- Every calculation lives in **one readable SQL view** (`v_projectx_lines`). No hidden formulas.
 
 ## Pages
 
 | URL | Audience | What |
 |---|---|---|
-| `/trakx/submit?p=fonterra-m26` | Subbies (public) | Combined Hours/Materials/Accom smartform |
-| `/trakx/login` | Everyone else | (handled by Richard) |
-| `/trakx/p/fonterra-m26` | All logged-in | Project dashboard |
-| `/trakx/p/fonterra-m26/approve` | PM | Approval queue |
-| `/trakx/p/fonterra-m26/ap` | Office | Accounts payable |
-| `/trakx/p/fonterra-m26/ar` | Office | Accounts receivable |
-| `/trakx/admin` | Admin | Projects, zones, people, rates |
+| `/projectx/submit?p=fonterra-m26` | Subbies (public) | Combined Hours/Materials/Accom smartform |
+| `/projectx/login` | Everyone else | (handled by Richard) |
+| `/projectx/p/fonterra-m26` | All logged-in | Project dashboard |
+| `/projectx/p/fonterra-m26/approve` | PM | Approval queue |
+| `/projectx/p/fonterra-m26/ap` | Office | Accounts payable |
+| `/projectx/p/fonterra-m26/ar` | Office | Accounts receivable |
+| `/projectx/admin` | Admin | Projects, zones, people, rates |
 
 ## Spec
 
@@ -39,4 +39,4 @@ Full spec + design history lives at `../fonterra-snapshot/TRAKX_SPEC.md`. Read t
 
 - Supabase project: `uhodycdbkwocvptiffks`
 - GitHub Pages deploy: TBD
-- Domain mapping: `apps.nationalgroupltd.com/trakx` (handled outside this repo)
+- Domain mapping: `apps.nationalgroupltd.com/projectx` (handled outside this repo)

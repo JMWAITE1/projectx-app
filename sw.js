@@ -1,11 +1,11 @@
-// TrakX — service worker
+// ProjectX — service worker
 // Strategy: network-first for HTML (always get latest), cache-first for icons.
 // Supabase, CDNs, and cross-origin requests are never intercepted.
 
-const CACHE = 'trakx-app-v1';
+const CACHE = 'projectx-app-v1';
 const ICONS = [
-  '/trakx-app/icon-192.png',
-  '/trakx-app/icon-512.png',
+  '/projectx-app/icon-192.png',
+  '/projectx-app/icon-512.png',
 ];
 
 self.addEventListener('install', e => {

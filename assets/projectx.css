@@ -1,4 +1,4 @@
-/* TrakX — shared design system
+/* ProjectX — shared design system
    Palette mirrors NGL brand (navy + gold + cool greys). */
 
 :root {
@@ -49,7 +49,7 @@ h1 { font-size: 20px; font-weight: 600; color: var(--navy); letter-spacing: -0.0
 h2 { font-size: 15px; font-weight: 600; color: var(--navy); letter-spacing: -0.005em; }
 
 /* ── Header / brand ──────────────────────────────────────────────── */
-.trakx-header {
+.projectx-header {
   background: var(--navy);
   color: white;
   padding: 12px 18px;
@@ -60,18 +60,18 @@ h2 { font-size: 15px; font-weight: 600; color: var(--navy); letter-spacing: -0.0
   box-shadow: 0 1px 2px rgba(15,23,42,.08);
   position: sticky; top: 0; z-index: 50;
 }
-.trakx-brand {
+.projectx-brand {
   font-weight: 800;
   font-size: 18px;
   letter-spacing: 0;
   display: inline-block;
   color: white;
 }
-.trakx-brand:hover { text-decoration: none; }
-.trakx-brand .mark { color: var(--gold); }
-.trakx-context { color: rgba(255,255,255,0.92); font-size: 17px; font-weight: 500; letter-spacing: 0.2px; }
-.trakx-spacer { flex: 1; }
-.trakx-nav-link {
+.projectx-brand:hover { text-decoration: none; }
+.projectx-brand .mark { color: var(--gold); }
+.projectx-context { color: rgba(255,255,255,0.92); font-size: 17px; font-weight: 500; letter-spacing: 0.2px; }
+.projectx-spacer { flex: 1; }
+.projectx-nav-link {
   color: rgba(255,255,255,0.78);
   font-size: 13px;
   font-weight: 500;
@@ -79,9 +79,9 @@ h2 { font-size: 15px; font-weight: 600; color: var(--navy); letter-spacing: -0.0
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
 }
-.trakx-nav-link:hover { color: white; background: rgba(255,255,255,0.08); text-decoration: none; }
-.trakx-nav-link.current { color: white; background: rgba(255,255,255,0.12); }
-.trakx-version { color: rgba(255,255,255,0.45); font-size: 11px; font-variant-numeric: tabular-nums; }
+.projectx-nav-link:hover { color: white; background: rgba(255,255,255,0.08); text-decoration: none; }
+.projectx-nav-link.current { color: white; background: rgba(255,255,255,0.12); }
+.projectx-version { color: rgba(255,255,255,0.45); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 /* Collapsible group headers (AP, AR) — hide the default disclosure triangle
    and use our own chevron span that rotates when open. */
@@ -95,13 +95,13 @@ details > summary .chevron {
 }
 details[open] > summary .chevron { transform: rotate(90deg); }
 
-.trakx-mobile-toggle { display: none; background: transparent; border: 0; color: white; font-size: 22px; }
+.projectx-mobile-toggle { display: none; background: transparent; border: 0; color: white; font-size: 22px; }
 @media (max-width: 760px) {
-  .trakx-nav-links { display: none; position: absolute; top: 100%; right: 0; background: var(--navy); padding: 8px; flex-direction: column; min-width: 180px; box-shadow: var(--shadow-md); }
-  .trakx-nav-links.open { display: flex; }
-  .trakx-mobile-toggle { display: block; }
+  .projectx-nav-links { display: none; position: absolute; top: 100%; right: 0; background: var(--navy); padding: 8px; flex-direction: column; min-width: 180px; box-shadow: var(--shadow-md); }
+  .projectx-nav-links.open { display: flex; }
+  .projectx-mobile-toggle { display: block; }
 }
-@media (min-width: 761px) { .trakx-nav-links { display: flex; gap: 4px; } }
+@media (min-width: 761px) { .projectx-nav-links { display: flex; gap: 4px; } }
 
 /* ── Containers ──────────────────────────────────────────────────── */
 .container { max-width: 1100px; margin: 0 auto; padding: 18px; }
@@ -406,7 +406,7 @@ details[open] > summary .chevron { transform: rotate(90deg); }
 }
 
 /* ── Footer ──────────────────────────────────────────────────────── */
-.trakx-footer {
+.projectx-footer {
   text-align: center;
   padding: 24px 16px;
   color: var(--gray-500);
@@ -415,7 +415,7 @@ details[open] > summary .chevron { transform: rotate(90deg); }
 
 /* ── Print ───────────────────────────────────────────────────────── */
 @media print {
-  .trakx-header, .btn, .trakx-footer { display: none !important; }
+  .projectx-header, .btn, .projectx-footer { display: none !important; }
   body { background: white; }
   .card { box-shadow: none; border: 1px solid var(--gray-300); break-inside: avoid; }
 }

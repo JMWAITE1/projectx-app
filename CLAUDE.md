@@ -1,6 +1,6 @@
 # Notes for Claude
 
-Solo repo for Johnny Waite. NGL TrakX rebuild — Fonterra Maungaturoto '26 first.
+Solo repo for Johnny Waite. NGL ProjectX rebuild — Fonterra Maungaturoto '26 first.
 
 ## Workflow rules
 
@@ -54,7 +54,7 @@ If asked to push without making other changes ("ship a version bump alone"), the
 ├── assets/                                   # CSS, JS, images
 ├── supabase/
 │   └── migrations/
-│       └── 20260527120000_trakx_schema.sql   # All schema lives here
+│       └── 20260527120000_trakx_schema.sql   # All schema lives here (historical name preserved)
 ├── .github/workflows/
 │   └── deploy.yml                            # (TBD) GitHub Pages or similar
 ├── CLAUDE.md                                 # this file
@@ -64,7 +64,7 @@ If asked to push without making other changes ("ship a version bump alone"), the
 
 ## Things to be careful of
 
-- **RLS on trakx_entries** — the subbie smartform is anonymous (no auth). Inserts must go via an edge function that validates project/zone/person are real and active, then writes with service-role. Never expose service-role to client.
-- **Snapshot rates on insert** — the edge function must read the current `trakx_project_rates` and current `trakx_person_rates` for the person and freeze them onto the entry row. This is non-negotiable for audit.
+- **RLS on projectx_entries** — the subbie smartform is anonymous (no auth). Inserts must go via an edge function that validates project/zone/person are real and active, then writes with service-role. Never expose service-role to client.
+- **Snapshot rates on insert** — the edge function must read the current `projectx_project_rates` and current `projectx_person_rates` for the person and freeze them onto the entry row. This is non-negotiable for audit.
 - **Approved → editable?** — currently no. Once approved, only an admin should be able to un-approve. (Confirm with Johnny if exceptions needed.)
 - **Auth = NOT my problem.** Richard handles authentication for PM/office/admin pages. Don't wire up Access Manager / am-* edge functions / login flows in this repo. Stub the protected pages with a "login required" placeholder; Richard will plug auth in.

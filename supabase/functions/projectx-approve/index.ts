@@ -1,4 +1,4 @@
-// trakx-approve: mark a trakx_entries row as approved (or un-approve).
+// projectx-approve: mark a projectx_entries row as approved (or un-approve).
 // Used by the PM approval page. verify_jwt=false for now; Richard will
 // add auth at the page level. The function logs approved_by as
 // whatever string the client sends.
@@ -42,13 +42,26 @@ Deno.serve(async (req) => {
   };
 
   const { error: e } = await db
-    .from('trakx_entries')
+    .from('projectx_entries')
     .update(patch)
     .eq('id', p.entry_id);
 
   if (e) {
-    console.error('trakx-approve', e);
+    console.error('projectx-approve', e);
     return err(`update failed: ${e.message}`, 500);
   }
+
+  // Forensic audit log — fire-and-forget.
+  try {
+    await db.from('projectx_audit_log').insert({
+      table_name:    'projectx_entries',
+      row_id:        p.entry_id,
+      action:        p.approved ? 'approve' : 'unapprove',
+      changed_fields:{ approved: p.approved },
+      actor:         (p.approved_by || 'unknown').toString(),
+      actor_source:  'approve_ui',
+    });
+  } catch (auditErr) { console.error('audit log write failed', auditErr); }
+
   return ok({ ok: true });
 });

@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX â€” Accounts Payable</title>
+<title>ProjectX â€” Accounts Payable</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="ap" data-version="V0.43">
+<body data-page="ap" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -40,17 +40,17 @@
   <div id="grand" class="card flex items-baseline justify-between mt-4" style="background:#f0f5fa;border-left:4px solid var(--blue)"></div>
 </main>
 
-<script src="assets/trakx-auth.js"></script>
+<script src="assets/projectx-auth.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-await window.__trakxReady;
+await window.__projectxReady;
 const sb = createClient(
   'https://uhodycdbkwocvptiffks.supabase.co',
   'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
 );
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
 
-const { data: allData, error } = await sb.from('v_trakx_ap').select('*').order('date');
+const { data: allData, error } = await sb.from('v_projectx_ap').select('*').order('date');
 let data = allData || [];
 const $ = document.getElementById('content');
 const $g = document.getElementById('grand');
@@ -174,7 +174,7 @@ document.getElementById('export-csv').addEventListener('click', () => {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `trakx-ap-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `projectx-ap-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 </script>

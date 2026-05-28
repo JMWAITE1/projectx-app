@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX â€” Approve</title>
+<title>ProjectX â€” Approve</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="approve" data-version="V0.43">
+<body data-page="approve" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -43,10 +43,10 @@
   <div id="list" class="flex" style="flex-direction:column;gap:14px"></div>
 </main>
 
-<script src="assets/trakx-auth.js"></script>
+<script src="assets/projectx-auth.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-await window.__trakxReady;
+await window.__projectxReady;
 const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
 const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
 
@@ -59,7 +59,7 @@ let allRows = [];
 async function load() {
   $list.innerHTML = '<div class="loading">Loadingâ€¦</div>';
   const { data, error } = await sb
-    .from('v_trakx_line_totals')
+    .from('v_projectx_line_totals')
     .select('id, type, date, person_name, company_name, zone_name, start_time, finish_time, total_hours, work_description, comments, materials_description, po_number, total_cost_cents, sell_price_cents')
     .eq('approved', false)
     .order('date', { ascending: false });
@@ -155,7 +155,7 @@ async function approve(ids) {
     return;
   }
   for (const id of ids) {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-approve`, {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/projectx-approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry_id: id, approved: true, approved_by: pm }),

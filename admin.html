@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX â€” Admin</title>
+<title>ProjectX â€” Admin</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 <style>
   .admin-grid {
     display: grid;
@@ -75,7 +75,7 @@
   .row-add-btn:hover { background: var(--gray-200); color: var(--navy); }
 </style>
 </head>
-<body data-page="admin" data-version="V0.43">
+<body data-page="admin" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -155,10 +155,10 @@
   </div>
 </main>
 
-<script src="assets/trakx-auth.js"></script>
+<script src="assets/projectx-auth.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-await window.__trakxReady;
+await window.__projectxReady;
 const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
 const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
 const c2d = c => (c / 100).toFixed(2);
@@ -170,7 +170,7 @@ let people = [];
 let zones = [];
 
 async function callAdmin(body) {
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-admin`, {
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/projectx-admin`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -188,7 +188,7 @@ function showError(target, label, err) {
 async function loadAll() {
   // Array+first instead of .single() â€” .single() is too strict and throws
   // "Cannot coerce to single JSON object" on transient hiccups.
-  const { data: projects, error: projErr } = await sb.from('trakx_projects').select('id,display_name,status').eq('slug','fonterra-m26').limit(1);
+  const { data: projects, error: projErr } = await sb.from('projectx_projects').select('id,display_name,status').eq('slug','fonterra-m26').limit(1);
   if (projErr || !projects || !projects.length) {
     const detail = projErr?.message || 'project row not visible (RLS?)';
     showError('zones-rows', `Could not load project: ${detail}`, projErr);
@@ -198,7 +198,7 @@ async function loadAll() {
   }
   projectId = projects[0].id;
 
-  const { data: prArr, error: prErr } = await sb.from('trakx_project_rates').select('*').eq('project_id', projectId).limit(1);
+  const { data: prArr, error: prErr } = await sb.from('projectx_project_rates').select('*').eq('project_id', projectId).limit(1);
   if (prErr) {
     document.getElementById('rates-msg').textContent = 'âš  rates load: ' + prErr.message;
     document.getElementById('rates-msg').className = 'text-xs text-red';
@@ -221,23 +221,23 @@ async function loadAll() {
     document.getElementById('zone_alert').value   = pr.zone_alert_within_pct ?? 10;
   }
 
-  const { data: zoneData, error: zErr } = await sb.from('trakx_zones').select('*').eq('project_id', projectId).order('display_order');
+  const { data: zoneData, error: zErr } = await sb.from('projectx_zones').select('*').eq('project_id', projectId).order('display_order');
   if (zErr) { showError('zones-rows', 'Zones query failed', zErr); }
   else      { zones = zoneData || []; renderZones(); }
 
-  const { data: companyData, error: cErr } = await sb.from('trakx_companies').select('*').order('name');
+  const { data: companyData, error: cErr } = await sb.from('projectx_companies').select('*').order('name');
   if (cErr) { showError('companies-rows', 'Companies query failed', cErr); }
   else      { companies = companyData || []; renderCompanies(); }
 
-  const { data: peopleData, error: pErr } = await sb.from('trakx_people').select('*').order('name');
+  const { data: peopleData, error: pErr } = await sb.from('projectx_people').select('*').order('name');
   if (pErr) { showError('people-rows', 'People query failed', pErr); return; }
   people = peopleData || [];
-  const { data: rates } = await sb.from('trakx_person_rates')
+  const { data: rates } = await sb.from('projectx_person_rates')
     .select('person_id, day_pay_rate_cents, night_pay_rate_cents, effective_from')
     .order('effective_from', { ascending: false });
   const latest = {};
   for (const r of (rates || [])) if (!latest[r.person_id]) latest[r.person_id] = r;
-  const { data: assigns } = await sb.from('trakx_project_people').select('person_id').eq('project_id', projectId);
+  const { data: assigns } = await sb.from('projectx_project_people').select('person_id').eq('project_id', projectId);
   const assignedIds = new Set((assigns || []).map(a => a.person_id));
   for (const p of people) {
     p.latest_rate = latest[p.id];

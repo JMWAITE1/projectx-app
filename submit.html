@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>TrakX — Submit</title>
+<title>ProjectX — Submit</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="submit" data-version="V0.40">
+<body data-page="submit" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container-narrow">
@@ -29,7 +29,7 @@
     <button class="tab" data-tab="accom">Accom &amp; Travel</button>
   </div>
 
-  <form id="trakx-form" class="card">
+  <form id="projectx-form" class="card">
     <div class="field-group">
       <label class="label" for="person">Your name</label>
       <select id="person" class="field" required></select>
@@ -113,7 +113,7 @@
     <div id="submit-msg" class="text-center text-sm mt-3"></div>
   </form>
 
-  <p class="trakx-footer">TrakX • <a href="javascript:location.reload()">Refresh</a></p>
+  <p class="projectx-footer">ProjectX • <a href="javascript:location.reload()">Refresh</a></p>
 </main>
 
 <script type="module">
@@ -142,7 +142,7 @@ async function load() {
   document.getElementById('date').valueAsDate = new Date();
 
   const { data: projects, error: pErr } = await sb
-    .from('trakx_projects')
+    .from('projectx_projects')
     .select('id, display_name, customer_name')
     .eq('slug', slug)
     .limit(1);
@@ -156,11 +156,11 @@ async function load() {
   projectId = project.id;
   document.getElementById('project-name').textContent = project.display_name;
   document.getElementById('project-sub').textContent  = `Daily entry for ${project.customer_name}`;
-  const ctx = document.querySelector('.trakx-context');
+  const ctx = document.querySelector('.projectx-context');
   if (ctx) ctx.textContent = project.display_name;
 
   const { data: zones } = await sb
-    .from('trakx_zones')
+    .from('projectx_zones')
     .select('id, name')
     .eq('project_id', project.id)
     .eq('status', 'active')
@@ -170,19 +170,19 @@ async function load() {
     (zones || []).map(z => `<option value="${z.id}">${z.name}</option>`).join('');
 
   const { data: links } = await sb
-    .from('trakx_project_people')
-    .select('person_id, trakx_people(id, name, trakx_companies(name))')
+    .from('projectx_project_people')
+    .select('person_id, projectx_people(id, name, projectx_companies(name))')
     .eq('project_id', project.id);
   const people = (links || [])
-    .map(l => l.trakx_people)
+    .map(l => l.projectx_people)
     .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
   document.getElementById('person').innerHTML =
     `<option value="">— pick name —</option>` +
-    people.map(p => `<option value="${p.id}">${p.name} (${p.trakx_companies?.name || ''})</option>`).join('');
+    people.map(p => `<option value="${p.id}">${p.name} (${p.projectx_companies?.name || ''})</option>`).join('');
 }
 
-document.getElementById('trakx-form').addEventListener('submit', async (e) => {
+document.getElementById('projectx-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = document.getElementById('submit-msg');
   const btn = document.getElementById('submit-btn');
@@ -214,7 +214,7 @@ document.getElementById('trakx-form').addEventListener('submit', async (e) => {
   payload.comments = document.getElementById('comments').value;
 
   try {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/trakx-submit`, {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/projectx-submit`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload),

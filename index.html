@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX â€” Fonterra Maungaturoto 26</title>
+<title>ProjectX â€” Fonterra Maungaturoto 26</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   /* Dashboard layout: KPI strip + 2 charts + sidebar (NetSuite list +
@@ -106,7 +106,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V0.43">
+<body data-page="dashboard" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -174,16 +174,16 @@
 
   <div id="pending-banner" hidden></div>
 
-  <p class="trakx-footer" style="text-align:left;color:var(--muted);font-size:11px">
+  <p class="projectx-footer" style="text-align:left;color:var(--muted);font-size:11px">
     <strong style="color:var(--navy)">CM</strong> = Contribution Margin: revenue minus direct costs (labour, travel, accom, materials).
     Internal staff time is overhead and isn't costed against the project P&amp;L.
   </p>
 </main>
 
-<script src="assets/trakx-auth.js"></script>
+<script src="assets/projectx-auth.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-await window.__trakxReady;
+await window.__projectxReady;
 const sb = createClient(
   'https://uhodycdbkwocvptiffks.supabase.co',
   'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
@@ -202,16 +202,16 @@ const SERIES = [
 ];
 
 const { data: zones } = await sb
-  .from('v_trakx_zone_rollup')
+  .from('v_projectx_zone_rollup')
   .select('*')
   .order('zone_name');
 
 // Zone alert threshold: warn when zone is within X% of target (default 10).
 // Read from the project_rates row for the active project.
 let alertWithinPct = 10;
-const { data: projForAlert } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').limit(1);
+const { data: projForAlert } = await sb.from('projectx_projects').select('id').eq('slug','fonterra-m26').limit(1);
 if (projForAlert && projForAlert[0]) {
-  const { data: prArr } = await sb.from('trakx_project_rates').select('zone_alert_within_pct').eq('project_id', projForAlert[0].id).limit(1);
+  const { data: prArr } = await sb.from('projectx_project_rates').select('zone_alert_within_pct').eq('project_id', projForAlert[0].id).limit(1);
   if (prArr && prArr[0] && prArr[0].zone_alert_within_pct != null) alertWithinPct = +prArr[0].zone_alert_within_pct;
 }
 const alertAtPct = 100 - alertWithinPct;
@@ -261,7 +261,7 @@ for (const z of (zones || [])) {
 const totalGpPct = totalRevenue > 0 ? (100 * totalGp / totalRevenue) : 0;
 
 // Cost breakdown for KPI strip
-const { data: lines } = await sb.from('v_trakx_line_totals').select('labour_cost_cents, travel_cost_cents, accom_cost_cents, materials_cost_cents, equipment_cost_cents').eq('approved', true);
+const { data: lines } = await sb.from('v_projectx_line_totals').select('labour_cost_cents, travel_cost_cents, accom_cost_cents, materials_cost_cents, equipment_cost_cents').eq('approved', true);
 const tot = (lines || []).reduce((a, r) => ({
   labour:    a.labour    + r.labour_cost_cents,
   travel:    a.travel    + r.travel_cost_cents,
@@ -411,7 +411,7 @@ document.getElementById('copy-subbie-link').addEventListener('click', async () =
   setTimeout(() => { hint.textContent = ''; }, 3500);
 });
 
-const { count } = await sb.from('trakx_entries').select('id', { count: 'exact', head: true }).eq('approved', false);
+const { count } = await sb.from('projectx_entries').select('id', { count: 'exact', head: true }).eq('approved', false);
 if (count && count > 0) {
   const b = document.getElementById('pending-banner');
   b.innerHTML = `

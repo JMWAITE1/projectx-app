@@ -1,4 +1,4 @@
-// trakx-admin: write endpoint for the admin UI. Dispatches on `op`.
+// projectx-admin: write endpoint for the admin UI. Dispatches on `op`.
 // verify_jwt=false for now; Richard plugs in auth at the page level.
 //
 // POST { op, ...args }
@@ -37,6 +37,20 @@ Deno.serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
+  // Forensic audit log helper — fire-and-forget. Logs the change to
+  // projectx_audit_log so we have a paper trail. Actor today is whatever the
+  // admin UI sends (or "anonymous (admin ui)" if not); once Richard wires
+  // Access Manager the UI passes the logged-in user's email.
+  const actor = (p.actor && String(p.actor).trim()) || 'anonymous (admin ui)';
+  const audit = async (table_name: string, row_id: string | null, action: string, changed_fields: any) => {
+    try {
+      await db.from('projectx_audit_log').insert({
+        table_name, row_id, action,
+        changed_fields, actor, actor_source: 'admin_ui',
+      });
+    } catch (e) { console.error('audit log write failed', e); }
+  };
+
   try {
     switch (p.op) {
 
@@ -54,8 +68,9 @@ Deno.serve(async (req) => {
           'zone_alert_within_pct',
         ]) if (p[k] !== undefined) fields[k] = p[k];
         fields.updated_at = new Date().toISOString();
-        const { error } = await db.from('trakx_project_rates').update(fields).eq('project_id', p.project_id);
+        const { error } = await db.from('projectx_project_rates').update(fields).eq('project_id', p.project_id);
         if (error) throw error;
+        await audit('projectx_project_rates', p.project_id, 'update', fields);
         return ok({ ok: true });
       }
 
@@ -71,15 +86,17 @@ Deno.serve(async (req) => {
           status: p.status || 'active',
         };
         if (p.zone_id) row.id = p.zone_id;
-        const { data, error } = await db.from('trakx_zones').upsert(row).select('id').single();
+        const { data, error } = await db.from('projectx_zones').upsert(row).select('id').single();
         if (error) throw error;
+        await audit('projectx_zones', data.id, p.zone_id ? 'update' : 'insert', row);
         return ok({ ok: true, id: data.id });
       }
 
       case 'delete_zone': {
         if (!p.zone_id) return err('zone_id required');
-        const { error } = await db.from('trakx_zones').delete().eq('id', p.zone_id);
+        const { error } = await db.from('projectx_zones').delete().eq('id', p.zone_id);
         if (error) throw error;
+        await audit('projectx_zones', p.zone_id, 'delete', null);
         return ok({ ok: true });
       }
 
@@ -87,8 +104,9 @@ Deno.serve(async (req) => {
         if (!p.name) return err('name required');
         const row: any = { name: p.name, is_internal: !!p.is_internal };
         if (p.company_id) row.id = p.company_id;
-        const { data, error } = await db.from('trakx_companies').upsert(row).select('id').single();
+        const { data, error } = await db.from('projectx_companies').upsert(row).select('id').single();
         if (error) throw error;
+        await audit('projectx_companies', data.id, p.company_id ? 'update' : 'insert', row);
         return ok({ ok: true, id: data.id });
       }
 
@@ -102,8 +120,9 @@ Deno.serve(async (req) => {
           active: p.active !== false,
         };
         if (p.person_id) row.id = p.person_id;
-        const { data, error } = await db.from('trakx_people').upsert(row).select('id').single();
+        const { data, error } = await db.from('projectx_people').upsert(row).select('id').single();
         if (error) throw error;
+        await audit('projectx_people', data.id, p.person_id ? 'update' : 'insert', row);
         return ok({ ok: true, id: data.id });
       }
 
@@ -111,27 +130,31 @@ Deno.serve(async (req) => {
         if (!p.person_id || !p.effective_from || p.day_pay_rate_cents == null || p.night_pay_rate_cents == null) {
           return err('person_id + effective_from + rates required');
         }
-        const { data, error } = await db.from('trakx_person_rates').insert({
+        const row = {
           person_id: p.person_id,
           effective_from: p.effective_from,
           day_pay_rate_cents: p.day_pay_rate_cents,
           night_pay_rate_cents: p.night_pay_rate_cents,
-        }).select('id').single();
+        };
+        const { data, error } = await db.from('projectx_person_rates').insert(row).select('id').single();
         if (error) throw error;
+        await audit('projectx_person_rates', data.id, 'insert', row);
         return ok({ ok: true, id: data.id });
       }
 
       case 'assign_person': {
         if (!p.project_id || !p.person_id) return err('project_id + person_id required');
         if (p.assigned) {
-          const { error } = await db.from('trakx_project_people').upsert({
+          const { error } = await db.from('projectx_project_people').upsert({
             project_id: p.project_id, person_id: p.person_id,
           });
           if (error) throw error;
+          await audit('projectx_project_people', `${p.project_id}/${p.person_id}`, 'assign', { project_id: p.project_id, person_id: p.person_id });
         } else {
-          const { error } = await db.from('trakx_project_people').delete()
+          const { error } = await db.from('projectx_project_people').delete()
             .eq('project_id', p.project_id).eq('person_id', p.person_id);
           if (error) throw error;
+          await audit('projectx_project_people', `${p.project_id}/${p.person_id}`, 'unassign', { project_id: p.project_id, person_id: p.person_id });
         }
         return ok({ ok: true });
       }
@@ -140,7 +163,7 @@ Deno.serve(async (req) => {
         return err(`unknown op: ${p.op}`);
     }
   } catch (e: any) {
-    console.error('trakx-admin', p.op, e);
+    console.error('projectx-admin', p.op, e);
     return err(e?.message || String(e), 500);
   }
 });

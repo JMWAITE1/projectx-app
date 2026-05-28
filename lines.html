@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TrakX â€” Lines</title>
+<title>ProjectX â€” Lines</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TrakX">
+<meta name="apple-mobile-web-app-title" content="ProjectX">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
-<link rel="stylesheet" href="assets/trakx.css">
+<link rel="stylesheet" href="assets/projectx.css">
 <style>
   /* This page is the canonical "where I can see EVERYTHING" view â€”
      every entry, every input, every calculated field. Equivalent of
@@ -96,7 +96,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V0.43">
+<body data-page="lines" data-version="V1.00">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -171,17 +171,17 @@
     </div>
   </div>
 
-  <p class="trakx-footer">
+  <p class="projectx-footer">
     Formula reference (PostgreSQL views):
-    <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527140000_night_hours_fix.sql" target="_blank">v_trakx_lines.sql</a> &middot;
+    <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527140000_night_hours_fix.sql" target="_blank">v_projectx_lines.sql</a> &middot;
     <a href="https://github.com/JMWAITE1/trakx-app/blob/main/supabase/migrations/20260527120000_trakx_schema.sql" target="_blank">schema</a>
   </p>
 </main>
 
-<script src="assets/trakx-auth.js"></script>
+<script src="assets/projectx-auth.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-await window.__trakxReady;
+await window.__projectxReady;
 const SUPABASE_URL = 'https://uhodycdbkwocvptiffks.supabase.co';
 const sb = createClient(SUPABASE_URL, 'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5');
 
@@ -200,15 +200,15 @@ const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 async function load() {
   // Project + rates so calc breakdown can show the live constants used
-  const { data: projects } = await sb.from('trakx_projects').select('id').eq('slug','fonterra-m26').limit(1);
+  const { data: projects } = await sb.from('projectx_projects').select('id').eq('slug','fonterra-m26').limit(1);
   const project = projects && projects[0];
   if (project) {
-    const { data: prArr } = await sb.from('trakx_project_rates').select('*').eq('project_id', project.id).limit(1);
+    const { data: prArr } = await sb.from('projectx_project_rates').select('*').eq('project_id', project.id).limit(1);
     allRates = (prArr && prArr[0]) || {};
   }
 
   // Pull all lines
-  const { data, error } = await sb.from('v_trakx_line_totals').select('*').limit(5000);
+  const { data, error } = await sb.from('v_projectx_line_totals').select('*').limit(5000);
   if (error) {
     $('lines-tbody').innerHTML = `<tr><td colspan="20" class="empty">âš  ${error.message}</td></tr>`;
     return;
@@ -497,7 +497,7 @@ $('export-csv').addEventListener('click', () => {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `trakx-lines-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `projectx-lines-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 

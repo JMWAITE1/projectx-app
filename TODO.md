@@ -1,21 +1,21 @@
-# TrakX TODO
+# ProjectX TODO
 
 ## What's live (as of V0.03)
 
-- ✅ Schema deployed (8 tables, 5 views, RLS, all calcs in `v_trakx_lines`)
+- ✅ Schema deployed (8 tables, 5 views, RLS, all calcs in `v_projectx_lines`)
 - ✅ Fonterra M26 seeded (4 zones with PO targets, 3 companies, 10 people, rates)
-- ✅ `trakx-submit` edge function — anonymous, validates, snapshots rates, inserts
+- ✅ `projectx-submit` edge function — anonymous, validates, snapshots rates, inserts
 - ✅ `submit.html` — public smartform, mobile, 3 tabs (Hours / Materials / Accom & Travel)
 - ✅ `index.html` — landing + live zone list
 - ✅ `admin.html` — placeholder
-- ✅ GitHub Pages deploy: https://jmwaite1.github.io/trakx-app/
+- ✅ GitHub Pages deploy: https://jmwaite1.github.io/projectx-app/
 
 ## Next milestone (V0.04)
 
 1. **Approve page** — PM ticks pending rows. Auth-agnostic shell (Richard plugs in his auth).
-2. **AP page** — reads `v_trakx_ap`, group by contractor + week, export CSV.
-3. **AR page** — reads `v_trakx_ar`, group by zone + date, export CSV.
-4. **Project dashboard** (`/p/fonterra-m26`) — 6 KPI tiles + GP-by-zone chart + zone-vs-target table, all from `v_trakx_zone_rollup`. Like IMR.
+2. **AP page** — reads `v_projectx_ap`, group by contractor + week, export CSV.
+3. **AR page** — reads `v_projectx_ar`, group by zone + date, export CSV.
+4. **Project dashboard** (`/p/fonterra-m26`) — 6 KPI tiles + GP-by-zone chart + zone-vs-target table, all from `v_projectx_zone_rollup`. Like IMR.
 
 ## UI / polish backlog (Johnny said "the ui is horrible")
 
@@ -36,7 +36,7 @@ Everything below is fair game once functionality is broader:
 
 ## Calc / data backlog
 
-- [ ] **Lunch deduction in cost calc** (per Q1) — currently `v_trakx_lines` uses gross day/night hours in the labour_cost formula, so the subbie is effectively paid for their lunch. Johnny wants NZ-law-compliant: 30min unpaid lunch + 2×10min paid rest. Fix in a follow-up migration that drops + recreates the view chain.
+- [ ] **Lunch deduction in cost calc** (per Q1) — currently `v_projectx_lines` uses gross day/night hours in the labour_cost formula, so the subbie is effectively paid for their lunch. Johnny wants NZ-law-compliant: 30min unpaid lunch + 2×10min paid rest. Fix in a follow-up migration that drops + recreates the view chain.
 - [ ] **NZ break law double-check** — Johnny asked me to verify online. Confirm: 30min unpaid meal after 4-6h, 10min paid rest at 2-4h and again at 6-8h.
 - [ ] **Admin UI** — currently just a placeholder. Need to be able to edit projects/zones/PO targets, people, person rates, project rates from the web app. Until then, edit via Supabase dashboard.
 
@@ -46,7 +46,7 @@ Richard handles auth for approve / AP / AR / admin pages. Build those as auth-ag
 
 ## Notes from V0.01–V0.03
 
-- Edge function deployed: `trakx-submit` at `https://uhodycdbkwocvptiffks.supabase.co/functions/v1/trakx-submit`
+- Edge function deployed: `projectx-submit` at `https://uhodycdbkwocvptiffks.supabase.co/functions/v1/projectx-submit`
 - Anon publishable key (safe for client): `sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5`
 - End-to-end tested with a real submission — calc view returned correct day/night/cost/sell
 - Pages deploy is `main` branch root, no Action needed; pushes go live in ~30s

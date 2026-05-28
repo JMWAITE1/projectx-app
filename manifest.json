@@ -1,9 +1,9 @@
 {
-  "name": "TrakX — NGL Project Costing",
-  "short_name": "TrakX",
+  "name": "ProjectX — NGL Project Costing",
+  "short_name": "ProjectX",
   "description": "Daily timesheets, materials and accom entry for NGL site projects",
-  "start_url": "/trakx-app/submit.html?p=fonterra-m26",
-  "scope": "/trakx-app/",
+  "start_url": "/projectx-app/submit.html?p=fonterra-m26",
+  "scope": "/projectx-app/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#1e3a5f",

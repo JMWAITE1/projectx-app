@@ -1,4 +1,4 @@
-// trakx-submit: anonymous public endpoint for the subbie smartform.
+// projectx-submit: anonymous public endpoint for the subbie smartform.
 // Accepts a single timesheet/materials/accom entry, validates that the
 // project/zone/person are real and active, snapshots current rates onto
 // the row, and inserts.
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
 
   // ── Validate project ─────────────────────────────────────────────
   const { data: project } = await db
-    .from('trakx_projects')
+    .from('projectx_projects')
     .select('id, status')
     .eq('id', p.project_id)
     .single();
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
   // ── Validate zone belongs to project + active ────────────────────
   const { data: zone } = await db
-    .from('trakx_zones')
+    .from('projectx_zones')
     .select('id, project_id, status')
     .eq('id', p.zone_id)
     .single();
@@ -101,18 +101,18 @@ Deno.serve(async (req) => {
 
   // ── Validate person is on this project + active ──────────────────
   const { data: link } = await db
-    .from('trakx_project_people')
-    .select('person_id, trakx_people!inner(id, active)')
+    .from('projectx_project_people')
+    .select('person_id, projectx_people!inner(id, active)')
     .eq('project_id', p.project_id)
     .eq('person_id', p.person_id)
     .single();
-  if (!link || !(link as any).trakx_people?.active) {
+  if (!link || !(link as any).projectx_people?.active) {
     return err('person not assigned to this project, or inactive', 404);
   }
 
   // ── Snapshot project rates ───────────────────────────────────────
   const { data: pr, error: prErr } = await db
-    .from('trakx_project_rates')
+    .from('projectx_project_rates')
     .select('*')
     .eq('project_id', p.project_id)
     .single();
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
 
   // ── Snapshot person pay rates (latest effective_from <= date) ────
   const { data: payRates } = await db
-    .from('trakx_person_rates')
+    .from('projectx_person_rates')
     .select('day_pay_rate_cents, night_pay_rate_cents, effective_from')
     .eq('person_id', p.person_id)
     .lte('effective_from', p.date)
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     accom_sell_snapshot_cents:     pr.accom_sell_per_night_cents,
     bonus_pct_snapshot:            pr.bonus_pct,
 
-    submitted_by_name: null,
+    submitted_by_name: p.submitted_by_name || null,
   };
 
   if (p.type === 'hours') {
@@ -170,14 +170,27 @@ Deno.serve(async (req) => {
 
   // ── Insert ───────────────────────────────────────────────────────
   const { data: row, error: insErr } = await db
-    .from('trakx_entries')
+    .from('projectx_entries')
     .insert(insert)
     .select('id')
     .single();
   if (insErr) {
-    console.error('trakx-submit insert error', insErr);
+    console.error('projectx-submit insert error', insErr);
     return err(`insert failed: ${insErr.message}`, 500);
   }
+
+  // Forensic audit log — fire-and-forget. Captures who/when even though
+  // the submit form is anonymous (no auth).
+  try {
+    await db.from('projectx_audit_log').insert({
+      table_name:    'projectx_entries',
+      row_id:        row.id,
+      action:        'insert',
+      changed_fields:insert,
+      actor:         p.submitted_by_name || 'anonymous (smartform)',
+      actor_source:  'smartform',
+    });
+  } catch (e) { console.error('audit log write failed', e); }
 
   return ok({ ok: true, id: row.id });
 });
