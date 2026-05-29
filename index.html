@@ -105,7 +105,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V1.13">
+<body data-page="dashboard" data-version="V1.14">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -172,11 +172,6 @@
   </div>
 
   <div id="pending-banner" hidden></div>
-
-  <p class="projectx-footer" style="text-align:left;color:var(--muted);font-size:11px">
-    <strong style="color:var(--navy)">CM</strong> = Contribution Margin: revenue minus direct costs (labour, travel, accom, materials).
-    Internal staff time is overhead and isn't costed against the project P&amp;L.
-  </p>
 </main>
 
 <script src="assets/projectx-auth.js"></script>
@@ -245,7 +240,6 @@ if (flagged.length) {
       <svg class="icon-lg" viewBox="0 0 24 24" stroke-width="1.5" stroke="${tint}" fill="none" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
       <strong style="color:var(--ink)">${title}</strong>
       <div style="flex:1;min-width:200px">${items}</div>
-      <span class="text-muted text-xs">threshold set in Admin</span>
     </div>`;
 }
 

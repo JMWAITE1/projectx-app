@@ -52,13 +52,12 @@
   }
 </style>
 </head>
-<body data-page="submit" data-version="V1.13">
+<body data-page="submit" data-version="V1.14">
 <script src="assets/nav.js" defer></script>
 
 <main class="container-narrow">
   <div class="mb-4">
     <h1 id="project-name">Submitting…</h1>
-    <div class="text-muted text-sm" id="project-sub">Loading project…</div>
   </div>
 
   <div class="tabs">
@@ -118,7 +117,6 @@
       <div class="field-group">
         <label class="label" for="receipt">Photo of receipt <span class="text-muted text-xs">(optional)</span></label>
         <input id="receipt" type="file" accept="image/*" capture="environment" class="field">
-        <div class="field-help">Upload not yet wired — photo will save with the entry in a future update.</div>
       </div>
     </div>
 
@@ -132,7 +130,6 @@
         <label class="label" for="travel_kms">Travel km <span class="text-muted text-xs">(optional)</span></label>
         <input id="travel_kms" type="number" min="0" step="0.1" class="field" inputmode="decimal">
       </div>
-      <div class="field-help">If you didn't stay overnight but drove a long way, log km here. Either field is fine on its own.</div>
     </div>
 
     <!-- Comments common to all tabs -->
@@ -145,7 +142,6 @@
     <div id="submit-msg" class="text-center text-sm mt-3"></div>
   </form>
 
-  <p class="projectx-footer">ProjectX • <a href="javascript:location.reload()">Refresh</a></p>
 </main>
 
 <script type="module">
@@ -194,13 +190,11 @@ async function load() {
   }
   if (!project) {
     document.getElementById('project-name').textContent = 'No active project';
-    document.getElementById('project-sub').textContent  = 'Ask Johnny to create one in Admin.';
     document.getElementById('submit-btn').disabled = true;
     return;
   }
   projectId = project.id;
   document.getElementById('project-name').textContent = project.display_name;
-  document.getElementById('project-sub').textContent  = `Daily entry for ${project.customer_name}`;
   const ctx = document.querySelector('.projectx-context');
   if (ctx) ctx.textContent = project.display_name;
 

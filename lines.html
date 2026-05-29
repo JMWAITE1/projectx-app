@@ -96,15 +96,12 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V1.13">
+<body data-page="lines" data-version="V1.14">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
   <div class="flex items-baseline justify-between mb-3 gap-3">
-    <div>
-      <h1>Log</h1>
-      <div class="text-muted text-xs mt-1">Click any row to inspect the full calculation.</div>
-    </div>
+    <h1>Log</h1>
     <div class="flex items-center gap-2" style="flex-shrink:0">
       <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
@@ -171,11 +168,6 @@
     </div>
   </div>
 
-  <p class="projectx-footer">
-    Formula reference (PostgreSQL views):
-    <a href="https://github.com/JMWAITE1/projectx-app/blob/main/supabase/migrations/20260527140000_night_hours_fix.sql" target="_blank">v_projectx_lines.sql</a> &middot;
-    <a href="https://github.com/JMWAITE1/projectx-app/blob/main/supabase/migrations/20260527120000_trakx_schema.sql" target="_blank">schema</a>
-  </p>
 </main>
 
 <script src="assets/projectx-auth.js"></script>
