@@ -8,8 +8,8 @@
   const APP_CODE    = 'projectx';
   const SESSION_KEY = 'ngl-am-auth';
 
-  // Inject a white cover on <html> immediately — before body is parsed, so
-  // page content never flashes. The login overlay (z-index:9999) sits on top.
+  // White cover sits above the page until showBody() pulls it. The login
+  // overlay (z-index 9999) sits above that.
   var cover = document.createElement('div');
   cover.id = 'projectx-cover';
   cover.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9997';
@@ -38,15 +38,22 @@
     window.__projectxJwt = data.access_token;
   }
 
-  var stored = loadSession();
-  if (stored && stored.access_token && stored.expires_at > Math.floor(Date.now() / 1000) + 60) {
-    window.__projectxJwt = stored.access_token;
-    document.addEventListener('DOMContentLoaded', showBody);
-    __resolveReady();
-    return; // already authenticated — skip overlay setup
+  // Silent refresh: swap a long-lived refresh token for a fresh access
+  // token. Access tokens live 1h, refresh tokens live months — wiring
+  // this in means a returning user doesn't have to re-OTP every day.
+  async function tryRefresh(refresh_token) {
+    try {
+      var r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refresh_token }),
+      });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (e) { return null; }
   }
 
-  // ── Inject overlay styles ───────────────────────────────────────────
+  // ── Overlay scaffolding (only mounted if auth check decides we need it) ──
   var style = document.createElement('style');
   style.textContent = [
     '.projectx-login-overlay{position:fixed;inset:0;background:rgba(10,20,40,.96);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}',
@@ -66,7 +73,6 @@
   ].join('');
   document.head.appendChild(style);
 
-  // ── Build overlay element ───────────────────────────────────────────
   var overlay = document.createElement('div');
   overlay.className = 'projectx-login-overlay';
   overlay.id = 'projectx-login-overlay';
@@ -89,16 +95,48 @@
     + '<div id="projectx-login-err" class="projectx-login-err"></div>'
     + '</div>';
 
+  function whenBodyReady(fn) {
+    if (document.body) fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
   function mountOverlay() {
-    document.body.insertBefore(overlay, document.body.firstChild);
-    overlay.classList.add('open');
-    setTimeout(function () { var e = document.getElementById('projectx-login-email'); if (e) e.focus(); }, 50);
+    whenBodyReady(function () {
+      document.body.insertBefore(overlay, document.body.firstChild);
+      overlay.classList.add('open');
+      setTimeout(function () { var e = document.getElementById('projectx-login-email'); if (e) e.focus(); }, 50);
+    });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mountOverlay);
-  } else {
+  // ── Auth decision ───────────────────────────────────────────────────
+  // (a) valid token → straight in
+  // (b) expired token + refresh token → silent refresh; if it fails, login
+  // (c) no session at all → login
+  function admitLoggedIn() {
+    whenBodyReady(showBody);
+    __resolveReady();
+  }
+  function showLogin() {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
     mountOverlay();
+  }
+
+  var stored = loadSession();
+  var nowSec = Math.floor(Date.now() / 1000);
+
+  if (stored && stored.access_token && stored.expires_at > nowSec + 60) {
+    window.__projectxJwt = stored.access_token;
+    admitLoggedIn();
+  } else if (stored && stored.refresh_token) {
+    tryRefresh(stored.refresh_token).then(function (s) {
+      if (s && s.access_token) {
+        saveSession(s);
+        admitLoggedIn();
+      } else {
+        showLogin();
+      }
+    });
+  } else {
+    showLogin();
   }
 
   // ── Login UI helpers ────────────────────────────────────────────────
