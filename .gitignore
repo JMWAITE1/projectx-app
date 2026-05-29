@@ -11,3 +11,6 @@ _*.json
 _*.py
 _scratch/
 .supabase/
+
+# Local Netlify folder
+.netlify
