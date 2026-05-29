@@ -81,6 +81,12 @@ h2 { font-size: 15px; font-weight: 600; color: var(--navy); letter-spacing: -0.0
 }
 .projectx-nav-link:hover { color: white; background: rgba(255,255,255,0.08); text-decoration: none; }
 .projectx-nav-link.current { color: white; background: rgba(255,255,255,0.12); }
+/* Icon-style nav buttons (History, Settings cog). Square hit target. */
+.projectx-nav-link.is-icon {
+  width: 32px; height: 32px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 2px;
+}
 .projectx-version { color: rgba(255,255,255,0.45); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 /* Collapsible group headers (AP, AR) — hide the default disclosure triangle

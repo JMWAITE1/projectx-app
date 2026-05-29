@@ -96,7 +96,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V1.15">
+<body data-page="lines" data-version="V1.17">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -245,6 +245,18 @@ async function load() {
   if (params.get('approved')) $('f-approved').value = params.get('approved');
 
   render();
+
+  // Deep-link from History page: ?entry=<id> auto-scrolls + expands that row.
+  const focusId = params.get('entry');
+  if (focusId) {
+    const tr = document.querySelector(`tr[data-id="${focusId}"]`);
+    if (tr) {
+      tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      tr.click();  // toggles the expanded calc detail
+      tr.style.boxShadow = '0 0 0 2px var(--amber)';
+      setTimeout(() => { tr.style.boxShadow = ''; }, 2000);
+    }
+  }
 }
 
 function filterRows() {

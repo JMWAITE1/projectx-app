@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProjectX — History</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a5f">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
+<link rel="stylesheet" href="assets/projectx.css">
+<style>
+  .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .hist-table th { background: var(--gray-50); padding: 8px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border); }
+  .hist-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: top; }
+  .hist-table tr:last-child td { border-bottom: none; }
+  .hist-table tr[onclick]:hover td { background: #f0f5fa; }
+  .hist-when { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hist-action { font-weight: 600; }
+  .hist-action.insert    { color: var(--blue); }
+  .hist-action.approve   { color: var(--green); }
+  .hist-action.unapprove { color: var(--amber); }
+  .hist-action.edit      { color: var(--amber); }
+  .hist-action.delete    { color: var(--red); }
+  .hist-changed { font-size: 11px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body data-page="history" data-version="V1.17">
+<script src="assets/projectx-auth.js"></script>
+<script src="assets/nav.js" defer></script>
+
+<main class="container">
+  <div class="flex items-baseline justify-between mb-3 gap-3">
+    <h1>History</h1>
+    <div class="flex items-center gap-2" style="flex-shrink:0">
+      <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Action
+        <select id="f-action" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto;min-width:120px">
+          <option value="">All</option>
+          <option value="insert">Submitted</option>
+          <option value="approve">Approved</option>
+          <option value="unapprove">Un-approved</option>
+          <option value="edit (un-approved)">Edited</option>
+          <option value="delete">Deleted</option>
+          <option value="update">Settings change</option>
+        </select>
+      </label>
+      <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">Actor
+        <select id="f-actor" class="field" style="min-height:30px;padding:4px 8px;font-size:13px;width:auto;min-width:160px"><option value="">All</option></select>
+      </label>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+  </div>
+
+  <div class="card card-tight" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="hist-table" id="hist-table">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Who</th>
+            <th>Did what</th>
+            <th>Where</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody">
+          <tr><td colspan="4" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="text-muted text-xs mt-3" id="hist-count"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+await window.__projectxReady;
+const sb = createClient(
+  'https://uhodycdbkwocvptiffks.supabase.co',
+  'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
+);
+
+// Friendly labels for each action / table combo.
+const ACTION_LABEL = {
+  'insert':              'Submitted',
+  'approve':             'Approved',
+  'unapprove':           'Un-approved',
+  'edit (un-approved)':  'Edited (un-approved)',
+  'delete':              'Deleted',
+  'update':              'Updated',
+  'assign':              'Assigned to project',
+  'unassign':            'Removed from project',
+};
+const TABLE_LABEL = {
+  'projectx_entries':         'entry',
+  'projectx_project_rates':   'project rates',
+  'projectx_zones':           'zone',
+  'projectx_companies':       'company',
+  'projectx_people':          'person',
+  'projectx_person_rates':    'person pay rate',
+  'projectx_project_people':  'project assignment',
+};
+
+const { data: rows, error } = await sb
+  .from('projectx_audit_log')
+  .select('id, table_name, row_id, action, actor, actor_source, changed_fields, created_at')
+  .order('id', { ascending: false })
+  .limit(500);
+
+if (error) {
+  document.getElementById('hist-tbody').innerHTML = `<tr><td colspan="4" class="empty">⚠ ${error.message}</td></tr>`;
+}
+
+// Resolve entry row_id → human label by joining with entries view (one query).
+const entryIds = [...new Set((rows || []).filter(r => r.table_name === 'projectx_entries').map(r => r.row_id).filter(Boolean))];
+let entryLabel = {};
+if (entryIds.length) {
+  const { data: entries } = await sb
+    .from('v_projectx_lines')
+    .select('id, date, person_name, zone_name, type')
+    .in('id', entryIds);
+  for (const e of (entries || [])) {
+    entryLabel[e.id] = `${e.date} · ${e.person_name} · ${e.zone_name} · ${e.type}`;
+  }
+}
+
+// Populate the actor filter.
+const actors = [...new Set((rows || []).map(r => r.actor).filter(Boolean))].sort();
+document.getElementById('f-actor').innerHTML =
+  '<option value="">All</option>' + actors.map(a => `<option>${a}</option>`).join('');
+
+function filtered() {
+  const act    = document.getElementById('f-action').value;
+  const actor  = document.getElementById('f-actor').value;
+  return (rows || []).filter(r => {
+    if (act   && r.action !== act)  return false;
+    if (actor && r.actor  !== actor) return false;
+    return true;
+  });
+}
+
+function actionClass(a) {
+  if (!a) return '';
+  if (a === 'insert')                 return 'insert';
+  if (a === 'approve')                return 'approve';
+  if (a === 'unapprove')              return 'unapprove';
+  if (a.startsWith('edit'))           return 'edit';
+  if (a === 'delete')                 return 'delete';
+  return '';
+}
+
+function render() {
+  const list = filtered();
+  const tbody = document.getElementById('hist-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">No activity matches the current filters.</td></tr>';
+    document.getElementById('hist-count').textContent = '';
+    return;
+  }
+  tbody.innerHTML = list.map(r => {
+    const when = (r.created_at || '').replace('T',' ').slice(0,16);
+    const actionPretty = ACTION_LABEL[r.action] || r.action;
+    const isEntry = r.table_name === 'projectx_entries' && r.row_id;
+    const stillExists = isEntry && entryLabel[r.row_id];
+    const where = isEntry
+      ? (entryLabel[r.row_id] || 'entry (deleted)')
+      : (TABLE_LABEL[r.table_name] || r.table_name);
+    let changed = '';
+    if (r.changed_fields && (r.action === 'edit (un-approved)' || r.action === 'update')) {
+      const keys = Object.keys(r.changed_fields).filter(k =>
+        !['modified_at','updated_at','approved','approved_by','approved_at'].includes(k));
+      if (keys.length) changed = `<div class="hist-changed">changed: ${keys.join(', ')}</div>`;
+    }
+    // Click any entry-linked row → open the Log page focused on that entry.
+    // Deleted entries stay un-clickable since there's nothing to open.
+    const clickAttr = stillExists
+      ? `style="cursor:pointer" onclick="location.href='lines.html?entry=${r.row_id}'" title="Open this entry in the Log"`
+      : '';
+    return `
+      <tr ${clickAttr}>
+        <td class="hist-when">${when}</td>
+        <td>${r.actor || '<span class="text-muted">unknown</span>'}${r.actor_source ? ` <span class="text-muted text-xs">(${r.actor_source})</span>` : ''}</td>
+        <td><span class="hist-action ${actionClass(r.action)}">${actionPretty}</span>${changed}</td>
+        <td>${where}</td>
+      </tr>
+    `;
+  }).join('');
+  document.getElementById('hist-count').textContent = `${list.length} of ${rows.length} events shown`;
+}
+
+document.getElementById('f-action').addEventListener('change', render);
+document.getElementById('f-actor').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>
