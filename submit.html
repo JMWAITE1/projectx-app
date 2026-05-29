@@ -13,8 +13,46 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
+<style>
+  /* Zone pick: stack of tap-target buttons. Radio under the hood for
+     accessibility + form semantics, label styled as a card. */
+  .zone-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .zone-grid input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .zone-grid label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    line-height: 1.3;
+    user-select: none;
+  }
+  .zone-grid label:hover { border-color: var(--blue); }
+  .zone-grid input[type="radio"]:checked + label {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: white;
+    font-weight: 600;
+  }
+</style>
 </head>
-<body data-page="submit" data-version="V1.10">
+<body data-page="submit" data-version="V1.11">
 <script src="assets/nav.js" defer></script>
 
 <main class="container-narrow">
@@ -34,15 +72,13 @@
       <label class="label" for="person">Your name</label>
       <select id="person" class="field" required></select>
     </div>
-    <div class="grid-2 mb-3">
-      <div>
-        <label class="label" for="date">Date</label>
-        <input id="date" type="date" class="field" required>
-      </div>
-      <div>
-        <label class="label" for="zone">Zone</label>
-        <select id="zone" class="field" required></select>
-      </div>
+    <div class="field-group">
+      <label class="label" for="date">Date</label>
+      <input id="date" type="date" class="field" required>
+    </div>
+    <div class="field-group">
+      <label class="label">Zone</label>
+      <div id="zone-radios" class="zone-grid"></div>
     </div>
 
     <!-- Hours tab -->
@@ -50,11 +86,11 @@
       <div class="grid-2 mb-3">
         <div>
           <label class="label" for="start_time">Start time</label>
-          <input id="start_time" type="time" class="field">
+          <select id="start_time" class="field"><option value="">— pick —</option></select>
         </div>
         <div>
           <label class="label" for="finish_time">Finish time</label>
-          <input id="finish_time" type="time" class="field">
+          <select id="finish_time" class="field"><option value="">— pick —</option></select>
         </div>
       </div>
       <div class="field-group">
@@ -174,9 +210,27 @@ async function load() {
     .eq('project_id', project.id)
     .eq('status', 'active')
     .order('display_order');
-  document.getElementById('zone').innerHTML =
-    `<option value="">— pick zone —</option>` +
-    (zones || []).map(z => `<option value="${z.id}">${z.name}</option>`).join('');
+  document.getElementById('zone-radios').innerHTML =
+    (zones || []).map(z => `
+      <div style="position:relative">
+        <input type="radio" name="zone" id="zone-${z.id}" value="${z.id}" required>
+        <label for="zone-${z.id}">${z.name}</label>
+      </div>
+    `).join('');
+
+  // Populate time dropdowns: every 15min from 00:00 → 23:45.
+  function buildTimeOptions() {
+    const opts = ['<option value="">— pick —</option>'];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const v = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        opts.push(`<option value="${v}">${v}</option>`);
+      }
+    }
+    return opts.join('');
+  }
+  document.getElementById('start_time').innerHTML  = buildTimeOptions();
+  document.getElementById('finish_time').innerHTML = buildTimeOptions();
 
   // Fetch people for the dropdown via plain queries (no embedded relations).
   // Embedded-relation joins relied on PostgREST's auto-detected FK relationships,
@@ -227,7 +281,7 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
   const payload = {
     project_id: projectId,
     type:       currentTab,
-    zone_id:    document.getElementById('zone').value,
+    zone_id:    (document.querySelector('input[name="zone"]:checked') || {}).value || '',
     person_id:  document.getElementById('person').value,
     date:       document.getElementById('date').value,
   };
