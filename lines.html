@@ -96,7 +96,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V1.12">
+<body data-page="lines" data-version="V1.13">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -193,6 +193,7 @@ let allLines = [];
 let allRates = {};        // project rates for showing formula values
 let allZones = [];        // {id, name} — for edit form dropdowns
 let allPeople = [];       // {id, name} — for edit form dropdowns
+let auditByEntry = {};    // entry_id → [{action, actor, actor_source, created_at, changed_fields}, …]
 let sortKey  = 'date';
 let sortDir  = 'desc';
 
@@ -225,6 +226,19 @@ async function load() {
     return;
   }
   allLines = data || [];
+
+  // Pull audit history for entries — used in the expanded calc panel to
+  // show who did what & when (submit / approve / edit / delete).
+  const { data: auditRows } = await sb
+    .from('projectx_audit_log')
+    .select('row_id, action, actor, actor_source, changed_fields, created_at')
+    .eq('table_name', 'projectx_entries')
+    .order('id', { ascending: false })
+    .limit(5000);
+  auditByEntry = {};
+  for (const a of (auditRows || [])) {
+    (auditByEntry[a.row_id] ||= []).push(a);
+  }
 
   // Populate filter dropdowns
   const zones     = [...new Set(allLines.map(r => r.zone_name))].sort();
@@ -477,9 +491,46 @@ function renderCalcDetail(r) {
       <div class="calc-line"><span>Marked paid</span><span>${r.marked_paid ? '✓' : '— payment tracked in NetSuite'}</span></div>
       <div class="calc-line"><span>Entry id</span><span style="font-family:monospace">${r.id}</span></div>
     </div>
+
+    <h3>History (who did what, when)</h3>
+    <div class="calc-block">
+      ${renderAuditHistory(r.id)}
+    </div>
   `);
 
   return blocks.join('');
+}
+
+function renderAuditHistory(entryId) {
+  const rows = auditByEntry[entryId] || [];
+  if (!rows.length) {
+    return '<div class="text-muted text-xs italic">No history recorded (entry pre-dates the audit log, or was seeded directly).</div>';
+  }
+  // Oldest first reads more naturally as a timeline.
+  const ordered = [...rows].reverse();
+  return ordered.map(a => {
+    const when = (a.created_at || '').replace('T',' ').slice(0,16);
+    const actionPretty = ({
+      insert: 'submitted',
+      approve: 'approved',
+      unapprove: 'un-approved',
+      'edit (un-approved)': 'edited (un-approved)',
+      delete: 'deleted',
+    })[a.action] || a.action;
+    const source = a.actor_source ? ` <span class="text-muted text-xs">(${a.actor_source})</span>` : '';
+    let detail = '';
+    if (a.action === 'edit (un-approved)' && a.changed_fields) {
+      const keys = Object.keys(a.changed_fields).filter(k =>
+        !['modified_at','approved','approved_by','approved_at'].includes(k));
+      if (keys.length) detail = `<div class="text-xs text-muted" style="margin-left:8px">changed: ${keys.join(', ')}</div>`;
+    }
+    return `
+      <div class="calc-line" style="align-items:flex-start">
+        <span><strong>${a.actor || 'unknown'}</strong> ${actionPretty}${source}${detail}</span>
+        <span class="text-muted text-xs" style="font-variant-numeric:tabular-nums">${when}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 // Sort handlers

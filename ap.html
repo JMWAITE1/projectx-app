@@ -13,15 +13,37 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
+<style>
+  /* Column hide rules — toggled by the "Columns" picker. */
+  .ap-table.hide-zone .col-zone,
+  .ap-table.hide-type .col-type,
+  .ap-table.hide-hours .col-hours,
+  .ap-table.hide-labour .col-labour,
+  .ap-table.hide-travel .col-travel,
+  .ap-table.hide-accom .col-accom,
+  .ap-table.hide-materials .col-materials,
+  .ap-table.hide-paid .col-paid { display: none; }
+</style>
 </head>
-<body data-page="ap" data-version="V1.12">
+<body data-page="ap" data-version="V1.13">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
   <div class="flex items-baseline justify-between mb-2 gap-3">
     <h1>Accounts Payable</h1>
-    <div class="flex items-center gap-2" style="flex-shrink:0">
+    <div class="flex items-center gap-2" style="flex-shrink:0; position:relative">
       <button id="toggle-all" class="btn btn-secondary btn-sm">Expand all</button>
+      <button id="cols-btn" class="btn btn-secondary btn-sm">Columns ▾</button>
+      <div id="cols-menu" hidden style="position:absolute;top:calc(100% + 4px);right:0;z-index:50;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px 10px;min-width:160px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="zone"> Zone</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="type"> Type</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="hours"> Hours</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="labour"> Labour</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="travel"> Travel</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="accom"> Accom</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="materials"> Materials</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-col="paid"> Paid</label>
+      </div>
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
       <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
     </div>
@@ -99,14 +121,19 @@ function render() {
           <span style="font-variant-numeric:tabular-nums">${fmt(total)}</span>
         </summary>
         <div style="overflow-x:auto">
-          <table class="table">
+          <table class="table ap-table">
             <thead>
               <tr>
-                <th>Date</th><th>Name</th><th>Zone</th><th>Type</th>
-                <th class="num">Hours</th>
-                <th class="num">Labour</th><th class="num">Travel</th>
-                <th class="num">Accom</th><th class="num">Materials</th>
-                <th class="num">Total</th><th>Paid</th>
+                <th>Date</th><th>Name</th>
+                <th class="col-zone">Zone</th>
+                <th class="col-type">Type</th>
+                <th class="num col-hours">Hours</th>
+                <th class="num col-labour">Labour</th>
+                <th class="num col-travel">Travel</th>
+                <th class="num col-accom">Accom</th>
+                <th class="num col-materials">Materials</th>
+                <th class="num">Total</th>
+                <th class="col-paid">Paid</th>
               </tr>
             </thead>
             <tbody>
@@ -114,15 +141,15 @@ function render() {
                 <tr>
                   <td>${r.date}</td>
                   <td><div class="font-semibold">${r.person_name}</div>${r.work_description ? `<div class="text-xs text-muted">${r.work_description.replace(/"/g,'&quot;').slice(0,60)}</div>` : ''}</td>
-                  <td class="text-muted">${r.zone_name}</td>
-                  <td><span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span></td>
-                  <td class="num">${r.total_hours ? (+r.total_hours).toFixed(2) : ''}</td>
-                  <td class="num">${fmt(r.labour_cost_cents)}</td>
-                  <td class="num">${fmt(r.travel_cost_cents)}</td>
-                  <td class="num">${fmt(r.accom_cost_cents)}</td>
-                  <td class="num">${fmt(r.materials_cost_cents)}</td>
+                  <td class="text-muted col-zone">${r.zone_name}</td>
+                  <td class="col-type"><span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span></td>
+                  <td class="num col-hours">${r.total_hours ? (+r.total_hours).toFixed(2) : ''}</td>
+                  <td class="num col-labour">${fmt(r.labour_cost_cents)}</td>
+                  <td class="num col-travel">${fmt(r.travel_cost_cents)}</td>
+                  <td class="num col-accom">${fmt(r.accom_cost_cents)}</td>
+                  <td class="num col-materials">${fmt(r.materials_cost_cents)}</td>
                   <td class="num font-semibold">${fmt(r.total_cost_cents)}</td>
-                  <td>${r.marked_paid ? '<span class="badge badge-green">✓</span>' : ''}</td>
+                  <td class="col-paid">${r.marked_paid ? '<span class="badge badge-green">✓</span>' : ''}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -133,6 +160,8 @@ function render() {
   }).join('');
   const anyFilter = ['f-from','f-to','f-company','f-person'].some(id => document.getElementById(id).value);
   $g.innerHTML = `<span class="font-semibold text-lg">Total owed${anyFilter ? ' (filtered)' : ''}</span><span class="text-lg font-bold" style="font-variant-numeric:tabular-nums">${fmt(grandTotal)}</span>`;
+  // Re-apply column visibility every render (re-creates the tables).
+  if (typeof applyCols === 'function') applyCols();
 }
 
 // Toggle-all button: expands or collapses every group. Render() resets to
@@ -156,7 +185,41 @@ document.getElementById('f-clear').addEventListener('click', () => {
   render();
 });
 
+// ── Column picker ──────────────────────────────────────────────────
+const COLS_KEY = 'projectx-ap-cols';
+const HIDEABLE = ['zone','type','hours','labour','travel','accom','materials','paid'];
+function loadCols() { try { return JSON.parse(localStorage.getItem(COLS_KEY) || '{}'); } catch { return {}; } }
+function saveCols(p) { localStorage.setItem(COLS_KEY, JSON.stringify(p)); }
+function applyCols() {
+  const p = loadCols();
+  document.querySelectorAll('table.ap-table').forEach(t => {
+    HIDEABLE.forEach(c => t.classList.toggle('hide-' + c, p[c] === false));
+  });
+  document.querySelectorAll('#cols-menu input[data-col]').forEach(cb => {
+    cb.checked = p[cb.dataset.col] !== false;
+  });
+}
+
 render();
+applyCols();
+
+document.getElementById('cols-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  const menu = document.getElementById('cols-menu');
+  menu.hidden = !menu.hidden;
+});
+document.addEventListener('click', e => {
+  const menu = document.getElementById('cols-menu');
+  if (!menu.hidden && !menu.contains(e.target) && e.target.id !== 'cols-btn') menu.hidden = true;
+});
+document.getElementById('cols-menu').addEventListener('change', e => {
+  const cb = e.target;
+  if (!cb.dataset.col) return;
+  const p = loadCols();
+  p[cb.dataset.col] = cb.checked;
+  saveCols(p);
+  applyCols();
+});
 
 document.getElementById('export-csv').addEventListener('click', () => {
   const rows = filtered();
