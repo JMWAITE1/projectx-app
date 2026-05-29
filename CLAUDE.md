@@ -18,7 +18,8 @@ A Windows scheduled task also auto-pulls all repos at 6:00 AM daily as a safety 
 1. `git pull --ff-only` first
 2. Write a real commit message in plain English
 3. `git push`
-4. Report new commit SHA, version, and GitHub link
+4. Redeploy to Netlify: `netlify deploy --dir . --prod`
+5. Report new commit SHA, version, and GitHub link
 
 ## Project-specific notes
 
