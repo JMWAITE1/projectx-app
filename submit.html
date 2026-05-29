@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="submit" data-version="V1.09">
+<body data-page="submit" data-version="V1.10">
 <script src="assets/nav.js" defer></script>
 
 <main class="container-narrow">
@@ -57,10 +57,6 @@
           <input id="finish_time" type="time" class="field">
         </div>
       </div>
-      <label class="check mb-3">
-        <input id="finish_next_day" type="checkbox">
-        Finish is on the next day (crosses midnight)
-      </label>
       <div class="field-group">
         <label class="label" for="work_description">What you did</label>
         <textarea id="work_description" class="field" rows="3" placeholder="e.g. Top coat blower room floor, cladding sill and scale"></textarea>
@@ -236,9 +232,13 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
     date:       document.getElementById('date').value,
   };
   if (currentTab === 'hours') {
-    payload.start_time       = document.getElementById('start_time').value;
-    payload.finish_time      = document.getElementById('finish_time').value;
-    payload.finish_next_day  = document.getElementById('finish_next_day').checked;
+    const startT  = document.getElementById('start_time').value;
+    const finishT = document.getElementById('finish_time').value;
+    payload.start_time       = startT;
+    payload.finish_time      = finishT;
+    // Auto-detect cross-midnight: if finish is earlier than start, it must
+    // be the next day. (No checkbox — subbies don't think in clock cycles.)
+    payload.finish_next_day  = !!(startT && finishT && finishT < startT);
     payload.work_description = document.getElementById('work_description').value;
   } else if (currentTab === 'materials') {
     payload.materials_description = document.getElementById('materials_description').value;
@@ -263,7 +263,6 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
     msg.textContent = '✓ Submitted — thanks!';
     document.getElementById('start_time').value = '';
     document.getElementById('finish_time').value = '';
-    document.getElementById('finish_next_day').checked = false;
     document.getElementById('work_description').value = '';
     document.getElementById('materials_description').value = '';
     document.getElementById('materials_cost').value = '';
