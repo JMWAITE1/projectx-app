@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProjectX â€” Lines</title>
+<title>ProjectX — Lines</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
 <style>
-  /* This page is the canonical "where I can see EVERYTHING" view â€”
+  /* This page is the canonical "where I can see EVERYTHING" view —
      every entry, every input, every calculated field. Equivalent of
      Smartsheet "01. Summary Database". Nothing hidden, nothing
      bundled behind a single $ figure. */
@@ -29,7 +29,7 @@
      the wrapper div's overflow-x kicks in instead of the page. */
   .lines-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12px; }
   /* Belt-and-braces: never let the body itself scroll horizontally
-     because of this page â€” keep all overflow inside the card. */
+     because of this page — keep all overflow inside the card. */
   html, body { max-width: 100%; overflow-x: hidden; }
   .lines-table thead th {
     background: var(--navy); color: white;
@@ -48,7 +48,7 @@
     white-space: nowrap;
   }
   .lines-table tbody td.wrap { white-space: normal; max-width: 220px; }
-  /* Alternating shade BY DATE â€” every row on the same day shares a
+  /* Alternating shade BY DATE — every row on the same day shares a
      background so the eye can group them visually. */
   .lines-table tbody tr.dg-a td { background: #e3ebf5; }
   .lines-table tbody tr.dg-b td { background: white; }
@@ -61,7 +61,7 @@
   .lines-table .approved { color: var(--green); font-weight: 600; }
   .lines-table .pending  { color: var(--amber); font-weight: 600; }
 
-  /* Contextual column visibility â€” when the user filters by a specific
+  /* Contextual column visibility — when the user filters by a specific
      type (Hours / Materials / Accom), hide columns that aren't relevant. */
   body[data-type-filter="hours"]     .col-mat,
   body[data-type-filter="materials"] .col-hours,
@@ -96,7 +96,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V1.08">
+<body data-page="lines" data-version="V1.09">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -106,7 +106,7 @@
       <div class="text-muted text-xs mt-1">Click any row to inspect the full calculation.</div>
     </div>
     <div class="flex items-center gap-2" style="flex-shrink:0">
-      <a href="index.html" class="btn btn-ghost btn-sm">â† Back</a>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
     </div>
   </div>
@@ -135,7 +135,7 @@
     <button id="f-clear" class="btn btn-ghost btn-sm">Clear filters</button>
   </div>
 
-  <div class="stats-bar mb-3" id="stats">Loadingâ€¦</div>
+  <div class="stats-bar mb-3" id="stats">Loading…</div>
 
   <div class="card card-tight" style="padding:0;overflow:hidden">
     <div style="overflow-x:auto;width:100%">
@@ -165,7 +165,7 @@
         </tr>
       </thead>
       <tbody id="lines-tbody">
-        <tr><td colspan="20" class="text-muted italic" style="text-align:center;padding:20px">Loadingâ€¦</td></tr>
+        <tr><td colspan="20" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
       </tbody>
     </table>
     </div>
@@ -210,7 +210,7 @@ async function load() {
   // Pull all lines
   const { data, error } = await sb.from('v_projectx_line_totals').select('*').limit(5000);
   if (error) {
-    $('lines-tbody').innerHTML = `<tr><td colspan="20" class="empty">âš  ${error.message}</td></tr>`;
+    $('lines-tbody').innerHTML = `<tr><td colspan="20" class="empty">⚠ ${error.message}</td></tr>`;
     return;
   }
   allLines = data || [];
@@ -262,7 +262,7 @@ function sortRows(rows) {
 }
 
 function render() {
-  // Drive contextual column visibility off the type filter â€” CSS does
+  // Drive contextual column visibility off the type filter — CSS does
   // the actual hiding via body[data-type-filter="..."] selectors.
   document.body.dataset.typeFilter = $('f-type').value || '';
 
@@ -288,7 +288,7 @@ function render() {
     const a = th.querySelector('.sort-arrow');
     if (a) a.remove();
     if (th.dataset.sort === sortKey) {
-      th.insertAdjacentHTML('beforeend', `<span class="sort-arrow">${sortDir === 'asc' ? 'â–²' : 'â–¼'}</span>`);
+      th.insertAdjacentHTML('beforeend', `<span class="sort-arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>`);
     }
   });
 
@@ -304,7 +304,7 @@ function render() {
     const dgClass = groupFlag ? 'dg-a' : 'dg-b';
     const typeBadge = `<span class="badge badge-${r.type==='hours'?'blue':r.type==='materials'?'gold':'amber'}">${r.type}</span>`;
     const statusBadge = r.approved
-      ? `<span class="approved">âœ“ ${r.approved_by || ''}</span>`
+      ? `<span class="approved">✓ ${r.approved_by || ''}</span>`
       : `<span class="pending">pending</span>`;
     return `
       <tr class="${dgClass}" data-id="${r.id}">
@@ -364,7 +364,7 @@ function renderCalcDetail(r) {
       ${r.type === 'hours' ? `
         <div class="calc-line"><span>Start time</span><span>${r.start_time || ''}</span></div>
         <div class="calc-line"><span>Finish time</span><span>${r.finish_time || ''}${r.finish_next_day ? ' (next day)' : ''}</span></div>
-        <div class="calc-line"><span>Work description</span><span>${r.work_description || 'â€”'}</span></div>
+        <div class="calc-line"><span>Work description</span><span>${r.work_description || '—'}</span></div>
       ` : ''}
       ${r.type === 'materials' ? `
         <div class="calc-line"><span>Materials</span><span>${r.materials_description || ''}</span></div>
@@ -434,7 +434,7 @@ function renderCalcDetail(r) {
     blocks.push(`
       <h3>Materials sell</h3>
       <div class="calc-block">
-        <div class="calc-formula">sell = cost &times; (1 + markup% / 100) â€” current markup ${allRates.materials_markup_pct ?? '0'}%</div>
+        <div class="calc-formula">sell = cost &times; (1 + markup% / 100) — current markup ${allRates.materials_markup_pct ?? '0'}%</div>
         <div class="calc-line"><span>Material cost</span><span>${fmt(r.materials_cost_cents || 0)}</span></div>
         <div class="calc-line"><span>Material sell</span><span>${fmt(r.materials_sell_cents || 0)}</span></div>
       </div>
@@ -445,17 +445,17 @@ function renderCalcDetail(r) {
   blocks.push(`
     <h3>Totals (with internal-staff rule)</h3>
     <div class="calc-block">
-      ${r.is_internal ? `<div class="calc-formula" style="color:var(--amber)">Internal staff (${r.company_name}) â€” 100% CM applied (internal staff cost is overhead, not project P&amp;L).</div>` : ''}
+      ${r.is_internal ? `<div class="calc-formula" style="color:var(--amber)">Internal staff (${r.company_name}) — 100% CM applied (internal staff cost is overhead, not project P&amp;L).</div>` : ''}
       <div class="calc-line"><span>Total cost</span><span>${fmt(r.total_cost_cents)}</span></div>
       <div class="calc-line"><span>Sell price</span><span>${fmt(r.sell_price_cents)}</span></div>
       <div class="calc-line total"><span>Profit (sell - cost)</span><span>${fmtP(r.profit_cents)}</span></div>
-      <div class="calc-line"><span>CM %</span><span>${r.sell_price_cents > 0 ? ((100 * r.profit_cents / r.sell_price_cents).toFixed(1) + '%') : 'â€”'}</span></div>
+      <div class="calc-line"><span>CM %</span><span>${r.sell_price_cents > 0 ? ((100 * r.profit_cents / r.sell_price_cents).toFixed(1) + '%') : '—'}</span></div>
     </div>
 
     <h3>Approval &amp; audit</h3>
     <div class="calc-block">
-      <div class="calc-line"><span>Approved</span><span>${r.approved ? 'âœ“ by ' + (r.approved_by || '?') + ' on ' + (r.approved_at ? r.approved_at.slice(0,10) : '?') : 'â€” pending'}</span></div>
-      <div class="calc-line"><span>Marked paid</span><span>${r.marked_paid ? 'âœ“' : 'â€” payment tracked in NetSuite'}</span></div>
+      <div class="calc-line"><span>Approved</span><span>${r.approved ? '✓ by ' + (r.approved_by || '?') + ' on ' + (r.approved_at ? r.approved_at.slice(0,10) : '?') : '— pending'}</span></div>
+      <div class="calc-line"><span>Marked paid</span><span>${r.marked_paid ? '✓' : '— payment tracked in NetSuite'}</span></div>
       <div class="calc-line"><span>Entry id</span><span style="font-family:monospace">${r.id}</span></div>
     </div>
   `);

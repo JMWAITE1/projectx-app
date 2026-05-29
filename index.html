@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProjectX â€” Fonterra Maungaturoto 26</title>
+<title>ProjectX — Fonterra Maungaturoto 26</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,7 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   /* Dashboard layout: KPI strip + 2 charts + sidebar (NetSuite list +
-     shared chart legend). No chrome banners â€” the top nav already
+     shared chart legend). No chrome banners — the top nav already
      covers branding. */
   /* Single-row grid: a fixed row height forces every column to be exactly
      the same height, regardless of how tall each column's own content is.
@@ -105,7 +105,7 @@
   .zone-table .actual-cell.over { color: var(--red); }
 </style>
 </head>
-<body data-page="dashboard" data-version="V1.08">
+<body data-page="dashboard" data-version="V1.09">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -116,7 +116,7 @@
 
     <!-- Left: vertical KPI strip -->
     <div class="kpi-strip" id="kpi-strip">
-      <div class="kpi-row"><div class="kpi-label">Loadingâ€¦</div></div>
+      <div class="kpi-row"><div class="kpi-label">Loading…</div></div>
     </div>
 
     <!-- Middle-left: Zone Summary -->
@@ -166,7 +166,7 @@
         </tr>
       </thead>
       <tbody id="zone-tbody">
-        <tr><td colspan="6" class="text-muted italic" style="text-align:center;padding:20px">Loadingâ€¦</td></tr>
+        <tr><td colspan="6" class="text-muted italic" style="text-align:center;padding:20px">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -188,16 +188,16 @@ const sb = createClient(
   'sb_publishable_TKWfAttrdywsm1BOMUMNlw_FjMolZO5'
 );
 const fmt = c => '$' + (Math.round(c / 100)).toLocaleString();
-const pct = n => (n == null ? 'â€”' : (+n).toFixed(0) + '%');
+const pct = n => (n == null ? '—' : (+n).toFixed(0) + '%');
 
-// NGL brand-aligned chart palette â€” refined a touch brighter so the
+// NGL brand-aligned chart palette — refined a touch brighter so the
 // bars read clearly without going back to cheap default-Chart.js look.
 const SERIES = [
-  { key: 'hours',  label: 'Total Hours',    color: '#94a3b8' },  // slate â€” neutral utility
-  { key: 'costs',  label: 'Total Costs',    color: '#1e3a5f' },  // NGL navy â€” primary
-  { key: 'gp',     label: 'Total CM$',      color: '#d4b370' },  // warmer gold â€” headline metric
-  { key: 'target', label: 'Revenue Target', color: '#4c9a64' },  // brighter sage â€” the goal
-  { key: 'actual', label: 'Revenue Actual', color: '#c64a3a' },  // rust red â€” the live state
+  { key: 'hours',  label: 'Total Hours',    color: '#94a3b8' },  // slate — neutral utility
+  { key: 'costs',  label: 'Total Costs',    color: '#1e3a5f' },  // NGL navy — primary
+  { key: 'gp',     label: 'Total CM$',      color: '#d4b370' },  // warmer gold — headline metric
+  { key: 'target', label: 'Revenue Target', color: '#4c9a64' },  // brighter sage — the goal
+  { key: 'actual', label: 'Revenue Actual', color: '#c64a3a' },  // rust red — the live state
 ];
 
 const { data: zones } = await sb
@@ -221,7 +221,7 @@ if (flagged.length) {
   // Show over first since it's more urgent.
   const overZones        = flagged.filter(z => z.pct_complete >= 100).sort((a,b) => b.pct_complete - a.pct_complete);
   const approachingZones = flagged.filter(z => z.pct_complete <  100).sort((a,b) => b.pct_complete - a.pct_complete);
-  const chip = (z, isOver) => `<a href="lines.html?zone=${encodeURIComponent(z.zone_name)}" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:${isOver?'var(--red)':'var(--amber)'};color:#fff;font-weight:600;font-size:12px;text-decoration:none;margin:2px 4px 2px 0">${z.zone_name} Â· ${(+z.pct_complete).toFixed(0)}%</a>`;
+  const chip = (z, isOver) => `<a href="lines.html?zone=${encodeURIComponent(z.zone_name)}" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:${isOver?'var(--red)':'var(--amber)'};color:#fff;font-weight:600;font-size:12px;text-decoration:none;margin:2px 4px 2px 0">${z.zone_name} · ${(+z.pct_complete).toFixed(0)}%</a>`;
   const items = overZones.map(z => chip(z, true)).concat(approachingZones.map(z => chip(z, false))).join('');
 
   // Title describes whichever cases are present; over-target leads if both.
@@ -314,14 +314,14 @@ if (!zones?.length) {
   }).join('');
 }
 
-// Shared Y-axis ceiling so the two charts line up visually â€” a $50k bar
+// Shared Y-axis ceiling so the two charts line up visually — a $50k bar
 // in the Zone Summary should sit at the same pixel height as a $50k slice
 // of the Total Summary. Right chart sums always dominate, so use those.
 const yMaxRaw = Math.max(totalCost, totalGp, totalTarget, totalRevenue) / 100;
 // Round up to nearest $10k for tidy gridlines.
 const yMax = Math.max(10000, Math.ceil(yMaxRaw / 10000) * 10000);
 
-// Shared chart options â€” built-in legend disabled (we render our own in the sidebar)
+// Shared chart options — built-in legend disabled (we render our own in the sidebar)
 // categoryPercentage + barPercentage keep bar widths consistent regardless of
 // how many categories the chart has (so 1 zone or 6 zones look the same shape).
 const baseOpts = {
@@ -349,14 +349,14 @@ const baseOpts = {
     x: {
       grid: { display: false },
       // maxRotation 0 keeps labels horizontal even when there are several
-      // bars â€” multi-word zone names are passed as arrays below so Chart.js
+      // bars — multi-word zone names are passed as arrays below so Chart.js
       // wraps them onto two lines instead of slanting.
       ticks: { font: { size: 11 }, color: '#1f2937', autoSkip: false, maxRotation: 0, minRotation: 0 },
     },
   },
 };
 
-// CM$ by Zone â€” click a bar to open Lines filtered to that zone
+// CM$ by Zone — click a bar to open Lines filtered to that zone
 const zoneLabels = (zones || []).map(z => z.zone_name);
 // Split multi-word zone names on space so Chart.js stacks them onto two
 // lines horizontally (matches the "Project total" chart's [['Project','total']] style).
@@ -382,7 +382,7 @@ new Chart(document.getElementById('chart-gp-by-plant').getContext('2d'), {
   },
 });
 
-// Total CM$ â€” click a bar to open Lines (all). Label as array â†’ renders on
+// Total CM$ — click a bar to open Lines (all). Label as array → renders on
 // two lines (Chart.js convention) so it sits balanced under the bars.
 new Chart(document.getElementById('chart-total').getContext('2d'), {
   type: 'bar',
@@ -397,7 +397,7 @@ new Chart(document.getElementById('chart-total').getContext('2d'), {
   },
   options: {
     ...baseOpts,
-    // Single category â€” keep bars narrow so the chart doesn't look empty.
+    // Single category — keep bars narrow so the chart doesn't look empty.
     datasets: { bar: { categoryPercentage: 0.45, barPercentage: 0.9 } },
     onClick: (_, els) => { if (els.length) location.href = 'lines.html'; },
   },
@@ -409,7 +409,7 @@ document.getElementById('copy-subbie-link').addEventListener('click', async () =
   const hint = document.getElementById('submit-hint');
   try {
     await navigator.clipboard.writeText(url);
-    hint.textContent = 'âœ“ Copied';
+    hint.textContent = '✓ Copied';
     hint.style.color = 'var(--green)';
   } catch {
     hint.textContent = url + ' (copy manually)';

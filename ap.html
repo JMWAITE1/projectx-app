@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProjectX â€” Accounts Payable</title>
+<title>ProjectX — Accounts Payable</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 <link rel="stylesheet" href="assets/projectx.css">
 </head>
-<body data-page="ap" data-version="V1.08">
+<body data-page="ap" data-version="V1.09">
 <script src="assets/nav.js" defer></script>
 
 <main class="container">
@@ -23,7 +23,7 @@
     <div class="flex items-center gap-2" style="flex-shrink:0">
       <button id="toggle-all" class="btn btn-secondary btn-sm">Expand all</button>
       <button id="export-csv" class="btn btn-secondary btn-sm">Export CSV</button>
-      <a href="index.html" class="btn btn-ghost btn-sm">â† Back</a>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
     </div>
   </div>
   <p class="text-muted text-sm mb-3">What we owe contractors. Excludes internal staff.</p>
@@ -92,9 +92,9 @@ function render() {
       <details class="card" style="padding:0;overflow:hidden">
         <summary style="padding:10px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:14px; background:var(--navy); color:#fff; letter-spacing:-0.005em">
           <span style="display:flex;align-items:center;gap:8px">
-            <span class="chevron">â–¶</span>
+            <span class="chevron">▶</span>
             ${company}
-            <span style="font-weight:400;font-size:12px;color:rgba(255,255,255,0.7)">${rows.length} entries${totalHrs > 0 ? ` Â· ${Math.round(totalHrs)}h` : ''}</span>
+            <span style="font-weight:400;font-size:12px;color:rgba(255,255,255,0.7)">${rows.length} entries${totalHrs > 0 ? ` · ${Math.round(totalHrs)}h` : ''}</span>
           </span>
           <span style="font-variant-numeric:tabular-nums">${fmt(total)}</span>
         </summary>
@@ -122,7 +122,7 @@ function render() {
                   <td class="num">${fmt(r.accom_cost_cents)}</td>
                   <td class="num">${fmt(r.materials_cost_cents)}</td>
                   <td class="num font-semibold">${fmt(r.total_cost_cents)}</td>
-                  <td>${r.marked_paid ? '<span class="badge badge-green">âœ“</span>' : ''}</td>
+                  <td>${r.marked_paid ? '<span class="badge badge-green">✓</span>' : ''}</td>
                 </tr>
               `).join('')}
             </tbody>
