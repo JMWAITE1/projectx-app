@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+<base href="/projectx/">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ProjectX — Submit</title>
+<title>ProjectX â€” Submit</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -57,7 +58,7 @@
 
 <main class="container-narrow">
   <div class="mb-4">
-    <h1 id="project-name">Submitting…</h1>
+    <h1 id="project-name">Submittingâ€¦</h1>
   </div>
 
   <div class="tabs">
@@ -85,11 +86,11 @@
       <div class="grid-2 mb-3">
         <div>
           <label class="label" for="start_time">Start time</label>
-          <select id="start_time" class="field"><option value="">— pick —</option></select>
+          <select id="start_time" class="field"><option value="">â€” pick â€”</option></select>
         </div>
         <div>
           <label class="label" for="finish_time">Finish time</label>
-          <select id="finish_time" class="field"><option value="">— pick —</option></select>
+          <select id="finish_time" class="field"><option value="">â€” pick â€”</option></select>
         </div>
       </div>
       <div class="field-group">
@@ -111,7 +112,7 @@
         </div>
         <div>
           <label class="label" for="po_number">PO # <span class="text-muted text-xs">(optional)</span></label>
-          <input id="po_number" type="text" class="field" placeholder="WD44…">
+          <input id="po_number" type="text" class="field" placeholder="WD44â€¦">
         </div>
       </div>
       <div class="field-group">
@@ -179,7 +180,7 @@ async function load() {
   if (pErr) console.error('project lookup by slug failed', pErr);
   let project = projects && projects[0];
   if (!project) {
-    console.warn(`No project with slug="${slug}" — falling back to first active project`);
+    console.warn(`No project with slug="${slug}" â€” falling back to first active project`);
     const fallback = await sb
       .from('projectx_projects')
       .select('id, display_name, customer_name, status')
@@ -198,7 +199,7 @@ async function load() {
   const ctx = document.querySelector('.projectx-context');
   if (ctx) ctx.textContent = project.display_name;
 
-  // Smartform tab visibility — admin can hide tabs they don't want subbies seeing.
+  // Smartform tab visibility â€” admin can hide tabs they don't want subbies seeing.
   // If all three end up hidden, force Hours back on so the form is still usable.
   const { data: prRows } = await sb
     .from('projectx_project_rates')
@@ -235,9 +236,9 @@ async function load() {
       </div>
     `).join('');
 
-  // Populate time dropdowns: every 15min from 00:00 → 23:45.
+  // Populate time dropdowns: every 15min from 00:00 â†’ 23:45.
   function buildTimeOptions() {
-    const opts = ['<option value="">— pick —</option>'];
+    const opts = ['<option value="">â€” pick â€”</option>'];
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 15) {
         const v = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
@@ -251,7 +252,7 @@ async function load() {
 
   // Fetch people for the dropdown via plain queries (no embedded relations).
   // Embedded-relation joins relied on PostgREST's auto-detected FK relationships,
-  // which were brittle after the trakx→projectx table renames. Plain queries
+  // which were brittle after the trakxâ†’projectx table renames. Plain queries
   // are slower but never silently return empty.
   const { data: links, error: linkErr } = await sb
     .from('projectx_project_people')
@@ -278,10 +279,10 @@ async function load() {
 
   const $person = document.getElementById('person');
   if (!people.length) {
-    $person.innerHTML = '<option value="">— no people assigned to this project —</option>';
+    $person.innerHTML = '<option value="">â€” no people assigned to this project â€”</option>';
   } else {
     $person.innerHTML =
-      '<option value="">— pick name —</option>' +
+      '<option value="">â€” pick name â€”</option>' +
       people.map(p => `<option value="${p.id}">${p.name} (${p.company})</option>`).join('');
   }
 }
@@ -291,7 +292,7 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
   const msg = document.getElementById('submit-msg');
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Submitting…';
+  btn.textContent = 'Submittingâ€¦';
   msg.textContent = '';
   msg.className = 'text-center text-sm mt-3';
 
@@ -308,7 +309,7 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
     payload.start_time       = startT;
     payload.finish_time      = finishT;
     // Auto-detect cross-midnight: if finish is earlier than start, it must
-    // be the next day. (No checkbox — subbies don't think in clock cycles.)
+    // be the next day. (No checkbox â€” subbies don't think in clock cycles.)
     payload.finish_next_day  = !!(startT && finishT && finishT < startT);
     payload.work_description = document.getElementById('work_description').value;
   } else if (currentTab === 'materials') {
@@ -331,7 +332,7 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
     if (!r.ok || !body.ok) throw new Error(body.error || `HTTP ${r.status}`);
 
     msg.className = 'text-center text-sm mt-3 text-green';
-    msg.textContent = '✓ Submitted — thanks!';
+    msg.textContent = 'âœ“ Submitted â€” thanks!';
     document.getElementById('start_time').value = '';
     document.getElementById('finish_time').value = '';
     document.getElementById('work_description').value = '';
@@ -343,7 +344,7 @@ document.getElementById('projectx-form').addEventListener('submit', async (e) =>
     document.getElementById('comments').value = '';
   } catch (e) {
     msg.className = 'text-center text-sm mt-3 text-red';
-    msg.textContent = '⚠ ' + e.message;
+    msg.textContent = 'âš  ' + e.message;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Submit';
@@ -354,3 +355,4 @@ load();
 </script>
 </body>
 </html>
+
