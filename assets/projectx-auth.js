@@ -62,9 +62,23 @@
     } catch (e) { return false; }
   }
 
-  function redirect() {
+  function goToLogin() {
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
     location.href = AM_LOGIN;
+  }
+
+  function showNoAccess() {
+    function render() {
+      showBody();
+      document.body.innerHTML =
+        '<div style="padding:60px 24px;text-align:center;font-family:Segoe UI,sans-serif;color:#1f2533">' +
+        '<h2 style="color:#1e3a5f;margin:0 0 12px">ProjectX</h2>' +
+        '<p style="margin:0 0 16px">You don\'t have access to this app. Ask an admin to grant you access via Access Manager.</p>' +
+        '<p><a href="https://apps.nationalgroupltd.com/access-manager" style="color:#1e3a5f">Open Access Manager</a></p>' +
+        '</div>';
+    }
+    if (document.body) render();
+    else document.addEventListener('DOMContentLoaded', render);
   }
 
   function whenBodyReady(fn) {
@@ -90,10 +104,10 @@
       }
     }
 
-    if (!jwt || !userId) { redirect(); return; }
+    if (!jwt || !userId) { goToLogin(); return; }
 
     var hasAccess = await checkAccess(jwt, userId);
-    if (!hasAccess) { redirect(); return; }
+    if (!hasAccess) { showNoAccess(); return; }
 
     whenBodyReady(showBody);
     __resolveReady();
