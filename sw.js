@@ -2,7 +2,7 @@
 // Strategy: network-first for HTML (always get latest), cache-first for icons.
 // Supabase, CDNs, and cross-origin requests are never intercepted.
 
-const CACHE = 'projectx-app-v9';
+const CACHE = 'projectx-app-v10';
 const ICONS = [
   '/projectx-app/icon-192.png',
   '/projectx-app/icon-512.png',

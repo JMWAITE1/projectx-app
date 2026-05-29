@@ -96,7 +96,7 @@
   .calc-link:hover { background: var(--gold-d); color: white; text-decoration: none; }
 </style>
 </head>
-<body data-page="lines" data-version="V1.11">
+<body data-page="lines" data-version="V1.12">
 <script src="assets/nav.js" defer></script>
 
 <main class="container" style="max-width:none;width:100%;padding-left:18px;padding-right:18px">
@@ -191,6 +191,8 @@ const numh = h => h == null ? '' : (+h).toFixed(2);
 
 let allLines = [];
 let allRates = {};        // project rates for showing formula values
+let allZones = [];        // {id, name} — for edit form dropdowns
+let allPeople = [];       // {id, name} — for edit form dropdowns
 let sortKey  = 'date';
 let sortDir  = 'desc';
 
@@ -205,6 +207,15 @@ async function load() {
   if (project) {
     const { data: prArr } = await sb.from('projectx_project_rates').select('*').eq('project_id', project.id).limit(1);
     allRates = (prArr && prArr[0]) || {};
+    // Pull full zones + people lists so the edit form has IDs to select from.
+    const { data: zoneRows } = await sb.from('projectx_zones').select('id, name').eq('project_id', project.id).eq('status','active').order('display_order');
+    allZones = zoneRows || [];
+    const { data: links } = await sb.from('projectx_project_people').select('person_id').eq('project_id', project.id);
+    const personIds = (links || []).map(l => l.person_id);
+    if (personIds.length) {
+      const { data: peopleRows } = await sb.from('projectx_people').select('id, name').in('id', personIds).eq('active', true).order('name');
+      allPeople = peopleRows || [];
+    }
   }
 
   // Pull all lines
@@ -353,6 +364,14 @@ function toggleDetail(tr, r) {
 function renderCalcDetail(r) {
   const blocks = [];
 
+  // Edit + Delete buttons top-right
+  blocks.push(`
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <button class="btn btn-secondary btn-sm" onclick="startEdit('${r.id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEntry('${r.id}')">Delete</button>
+    </div>
+  `);
+
   // Entry inputs
   blocks.push(`
     <h3>Inputs (what the subbie / TL submitted)</h3>
@@ -500,6 +519,142 @@ $('export-csv').addEventListener('click', () => {
   a.download = `projectx-lines-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
+
+// ── Edit + Delete an entry ─────────────────────────────────────────
+function buildTimeOptionsHtml(selected) {
+  const opts = ['<option value="">—</option>'];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const v = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      opts.push(`<option value="${v}" ${selected && selected.startsWith(v) ? 'selected' : ''}>${v}</option>`);
+    }
+  }
+  return opts.join('');
+}
+
+function renderEditForm(r) {
+  const zoneOpts   = allZones.map(z =>  `<option value="${z.id}" ${z.id === r.zone_id ? 'selected':''}>${z.name}</option>`).join('');
+  const personOpts = allPeople.map(p => `<option value="${p.id}" ${p.id === r.person_id ? 'selected':''}>${p.name}</option>`).join('');
+  const typeOpts   = ['hours','materials','accom'].map(t => `<option value="${t}" ${t === r.type ? 'selected':''}>${t}</option>`).join('');
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="margin:0">Edit entry</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit('${r.id}')">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEdit('${r.id}')">Save</button>
+      </div>
+    </div>
+    <p class="text-muted text-xs" style="margin-bottom:12px">Saving will un-approve this entry. A PM needs to re-approve it on the Approve page.</p>
+    <div class="calc-block" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px 14px">
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Type</span>
+        <select id="e-type-${r.id}" class="field">${typeOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Date</span>
+        <input id="e-date-${r.id}" type="date" class="field" value="${r.date || ''}"></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Zone</span>
+        <select id="e-zone-${r.id}" class="field">${zoneOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Person</span>
+        <select id="e-person-${r.id}" class="field">${personOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Start time</span>
+        <select id="e-start-${r.id}" class="field">${buildTimeOptionsHtml(r.start_time)}</select></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Finish time</span>
+        <select id="e-finish-${r.id}" class="field">${buildTimeOptionsHtml(r.finish_time)}</select></label>
+      <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Work description</span>
+        <textarea id="e-work-${r.id}" class="field" rows="2">${r.work_description || ''}</textarea></label>
+      <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Materials description</span>
+        <textarea id="e-matdesc-${r.id}" class="field" rows="2">${r.materials_description || ''}</textarea></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Material cost ($)</span>
+        <input id="e-matcost-${r.id}" type="number" step="0.01" class="field num" value="${r.materials_cost_cents ? (r.materials_cost_cents/100).toFixed(2) : ''}"></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">PO #</span>
+        <input id="e-po-${r.id}" type="text" class="field" value="${r.po_number || ''}"></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Accom nights</span>
+        <input id="e-nights-${r.id}" type="number" min="0" class="field num" value="${r.accom_nights || 0}"></label>
+      <label style="display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Travel km</span>
+        <input id="e-kms-${r.id}" type="number" min="0" step="0.1" class="field num" value="${r.travel_kms || ''}"></label>
+      <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:3px"><span class="text-xs text-muted">Comments</span>
+        <input id="e-comments-${r.id}" type="text" class="field" value="${(r.comments || '').replace(/"/g,'&quot;')}"></label>
+    </div>
+    <div id="e-msg-${r.id}" class="text-xs mt-2"></div>
+  `;
+}
+
+window.startEdit = function (id) {
+  const r = allLines.find(x => x.id === id);
+  if (!r) return;
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  const detail = tr && tr.nextElementSibling;
+  if (detail && detail.classList.contains('detail-row')) {
+    detail.querySelector('.calc-detail').innerHTML = renderEditForm(r);
+  }
+};
+
+window.cancelEdit = function (id) {
+  const r = allLines.find(x => x.id === id);
+  if (!r) return;
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  const detail = tr && tr.nextElementSibling;
+  if (detail && detail.classList.contains('detail-row')) {
+    detail.querySelector('.calc-detail').innerHTML = renderCalcDetail(r);
+  }
+};
+
+window.saveEdit = async function (id) {
+  const msg = document.getElementById(`e-msg-${id}`);
+  msg.textContent = 'Saving…'; msg.className = 'text-xs text-muted mt-2';
+  const startT  = document.getElementById(`e-start-${id}`).value;
+  const finishT = document.getElementById(`e-finish-${id}`).value;
+  const payload = {
+    op: 'update_entry',
+    entry_id: id,
+    type:                 document.getElementById(`e-type-${id}`).value,
+    date:                 document.getElementById(`e-date-${id}`).value || null,
+    zone_id:              document.getElementById(`e-zone-${id}`).value || null,
+    person_id:            document.getElementById(`e-person-${id}`).value || null,
+    start_time:           startT || null,
+    finish_time:          finishT || null,
+    finish_next_day:      !!(startT && finishT && finishT < startT),
+    work_description:     document.getElementById(`e-work-${id}`).value || null,
+    materials_description:document.getElementById(`e-matdesc-${id}`).value || null,
+    materials_cost_cents: document.getElementById(`e-matcost-${id}`).value
+                          ? Math.round(parseFloat(document.getElementById(`e-matcost-${id}`).value) * 100)
+                          : null,
+    po_number:            document.getElementById(`e-po-${id}`).value || null,
+    accom_nights:         parseInt(document.getElementById(`e-nights-${id}`).value, 10) || null,
+    travel_kms:           document.getElementById(`e-kms-${id}`).value
+                          ? parseFloat(document.getElementById(`e-kms-${id}`).value)
+                          : null,
+    comments:             document.getElementById(`e-comments-${id}`).value || null,
+  };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/projectx-admin`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await r.json();
+    if (!body.ok) throw new Error(body.error || `HTTP ${r.status}`);
+    msg.textContent = '✓ Saved — reloading';
+    await load();
+    render();
+  } catch (e) {
+    msg.textContent = '⚠ ' + e.message;
+    msg.className = 'text-xs text-red mt-2';
+  }
+};
+
+window.deleteEntry = async function (id) {
+  if (!confirm('Delete this entry permanently? This cannot be undone.')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/projectx-admin`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'delete_entry', entry_id: id }),
+    });
+    const body = await r.json();
+    if (!body.ok) throw new Error(body.error || `HTTP ${r.status}`);
+    await load();
+    render();
+  } catch (e) {
+    alert('Delete failed: ' + e.message);
+  }
+};
 
 load();
 </script>

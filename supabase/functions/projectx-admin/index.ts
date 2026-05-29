@@ -142,6 +142,34 @@ Deno.serve(async (req) => {
         return ok({ ok: true, id: data.id });
       }
 
+      case 'update_entry': {
+        if (!p.entry_id) return err('entry_id required');
+        const fields: any = {};
+        for (const k of [
+          'type', 'date', 'zone_id', 'person_id',
+          'start_time', 'finish_time', 'finish_next_day', 'work_description',
+          'materials_description', 'materials_cost_cents', 'po_number',
+          'accom_nights', 'travel_kms', 'comments',
+        ]) if (p[k] !== undefined) fields[k] = p[k];
+        // Any edit un-approves the entry — needs PM re-approval to count again.
+        fields.approved    = false;
+        fields.approved_by = null;
+        fields.approved_at = null;
+        fields.modified_at = new Date().toISOString();
+        const { error } = await db.from('projectx_entries').update(fields).eq('id', p.entry_id);
+        if (error) throw error;
+        await audit('projectx_entries', p.entry_id, 'edit (un-approved)', fields);
+        return ok({ ok: true });
+      }
+
+      case 'delete_entry': {
+        if (!p.entry_id) return err('entry_id required');
+        const { error } = await db.from('projectx_entries').delete().eq('id', p.entry_id);
+        if (error) throw error;
+        await audit('projectx_entries', p.entry_id, 'delete', null);
+        return ok({ ok: true });
+      }
+
       case 'assign_person': {
         if (!p.project_id || !p.person_id) return err('project_id + person_id required');
         if (p.assigned) {
